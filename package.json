@@ -1,0 +1,9 @@
+{
+  "name": "cbasocceroos",
+  "private": true,
+  "scripts": {
+    "dev": "node server.js",
+    "dev:vercel": "vercel dev",
+    "deploy": "vercel"
+  }
+}

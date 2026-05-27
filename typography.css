@@ -1,0 +1,294 @@
+/*
+ * FIFA World Cup 2026 Dashboard — Typography Tokens
+ * ==================================================
+ * Source: Figma text style export — all px values halved
+ * Last updated: May 2026
+ *
+ * Usage: <link rel="stylesheet" href="typography.css">
+ * Import alongside tokens.css in every screen.
+ *
+ * letterSpacing 5% = 0.05em
+ * New tokens added: --type-large, --type-label
+ */
+
+:root {
+
+  /* ── FONT FAMILY ── */
+  --font-family: 'CBA Beacon Sans', sans-serif;
+
+  /* ══════════════════════════════════════════════
+     FIGMA TEXT STYLES — all px values halved
+  ══════════════════════════════════════════════ */
+
+  /* Ultra Large — 300px / 700 / tracking 0 */
+  --type-ultra-large-size:     300px;
+  --type-ultra-large-weight:   700;
+  --type-ultra-large-lh:       1;
+  --type-ultra-large-spacing:  0em;
+  --type-ultra-large-transform: none;
+
+  /* Large — NEW TOKEN / 120px / 800 / lh 128px / tracking 0.05em */
+  --type-large-size:     120px;
+  --type-large-weight:   800;
+  --type-large-lh:       128px;
+  --type-large-spacing:  0.05em;
+  --type-large-transform: none;
+
+  /* H1 — 98px / 700 / lh 104px / tracking 0.05em */
+  --type-h1-size:     98px;
+  --type-h1-weight:   700;
+  --type-h1-lh:       104px;
+  --type-h1-spacing:  0.05em;
+  --type-h1-transform: none;
+
+  /* H2 — 64px / 700 / lh 68px / tracking 0.05em */
+  --type-h2-size:     64px;
+  --type-h2-weight:   700;
+  --type-h2-lh:       68px;
+  --type-h2-spacing:  0.05em;
+  --type-h2-transform: none;
+
+  /* H3 — 48px / 700 / tracking 0.05em */
+  --type-h3-size:     48px;
+  --type-h3-weight:   700;
+  --type-h3-lh:       1.1;
+  --type-h3-spacing:  0.05em;
+  --type-h3-transform: none;
+
+  /* H4 — 42px / 700 / tracking 0 */
+  --type-h4-size:     42px;
+  --type-h4-weight:   700;
+  --type-h4-lh:       1.1;
+  --type-h4-spacing:  0;
+  --type-h4-transform: none;
+
+  /* H5 — 30px / 700 / tracking 0.05em */
+  --type-h5-size:     30px;
+  --type-h5-weight:   700;
+  --type-h5-lh:       1.2;
+  --type-h5-spacing:  0.05em;
+  --type-h5-transform: none;
+
+  /* H5 All Caps — 30px / 700 / tracking 0.05em / uppercase */
+  --type-h5-caps-size:     30px;
+  --type-h5-caps-weight:   700;
+  --type-h5-caps-lh:       1.2;
+  --type-h5-caps-spacing:  0.05em;
+  --type-h5-caps-transform: uppercase;
+
+  /* H6 — 24px / 700 / tracking 0.05em */
+  --type-h6-size:     24px;
+  --type-h6-weight:   700;
+  --type-h6-lh:       1.2;
+  --type-h6-spacing:  0.05em;
+  --type-h6-transform: none;
+
+  /* H6 All Caps — 24px / 700 / tracking 0.05em / uppercase */
+  --type-h6-caps-size:     24px;
+  --type-h6-caps-weight:   700;
+  --type-h6-caps-lh:       1.2;
+  --type-h6-caps-spacing:  0.05em;
+  --type-h6-caps-transform: uppercase;
+
+  /* H6 Light — 24px / 700 / tracking 0.05em */
+  --type-h6-light-size:     24px;
+  --type-h6-light-weight:   700;
+  --type-h6-light-lh:       1.2;
+  --type-h6-light-spacing:  0.05em;
+  --type-h6-light-transform: none;
+
+  /* H7 — 18px / 700 / tracking 0.05em / uppercase */
+  --type-h7-size:     18px;
+  --type-h7-weight:   700;
+  --type-h7-lh:       1.3;
+  --type-h7-spacing:  0.05em;
+  --type-h7-transform: uppercase;
+
+  /* Paragraph — 24px / 700 / tracking 0.05em */
+  --type-paragraph-size:     24px;
+  --type-paragraph-weight:   700;
+  --type-paragraph-lh:       1.3;
+  --type-paragraph-spacing:  0.05em;
+  --type-paragraph-transform: none;
+
+  /* Label — NEW TOKEN / 20px / 600 / lh 24px / tracking 0.05em */
+  --type-label-size:     20px;
+  --type-label-weight:   600;
+  --type-label-lh:       24px;
+  --type-label-spacing:  0.05em;
+  --type-label-transform: none;
+
+  /* ── EXTENSIONS — below Figma scale ── */
+
+  --type-small-size:     16px;
+  --type-small-weight:   400;
+  --type-small-lh:       1.4;
+  --type-small-spacing:  0em;
+  --type-small-transform: none;
+
+  --type-caption-size:     12px;
+  --type-caption-weight:   700;
+  --type-caption-lh:       1.3;
+  --type-caption-spacing:  0.08em;
+  --type-caption-transform: uppercase;
+
+  --type-meta-size:     12px;
+  --type-meta-weight:   400;
+  --type-meta-lh:       1.4;
+  --type-meta-spacing:  0em;
+  --type-meta-transform: none;
+
+  /* ══════════════════════════════════════════════
+     SEMANTIC ALIASES — dashboard element mapping
+  ══════════════════════════════════════════════ */
+
+  /* GOAL! overlay */
+  --type-goal-overlay-size:    var(--type-ultra-large-size);
+  --type-goal-overlay-weight:  var(--type-ultra-large-weight);
+  --type-goal-overlay-spacing: var(--type-ultra-large-spacing);
+
+  /* Live match score numbers */
+  --type-score-size:    var(--type-ultra-large-size);
+  --type-score-weight:  var(--type-ultra-large-weight);
+  --type-score-spacing: var(--type-ultra-large-spacing);
+
+  /* Coming up countdown */
+  --type-countdown-size:    var(--type-large-size);
+  --type-countdown-weight:  var(--type-large-weight);
+  --type-countdown-lh:      var(--type-large-lh);
+  --type-countdown-spacing: var(--type-large-spacing);
+
+  /* Page titles ("Now Playing", "Matches Coming Up") */
+  --type-page-title-size:    var(--type-h2-size);
+  --type-page-title-weight:  var(--type-h2-weight);
+  --type-page-title-lh:      var(--type-h2-lh);
+  --type-page-title-spacing: var(--type-h2-spacing);
+
+  /* Team name — large */
+  --type-team-lg-size:    var(--type-h4-size);
+  --type-team-lg-weight:  var(--type-h4-weight);
+  --type-team-lg-spacing: var(--type-h4-spacing);
+
+  /* Stage label + match clock */
+  --type-stage-size:    var(--type-h3-size);
+  --type-stage-weight:  var(--type-h3-weight);
+  --type-stage-spacing: var(--type-h3-spacing);
+
+  /* Team name — small + group/venue meta row */
+  --type-team-sm-size:    var(--type-h5-size);
+  --type-team-sm-weight:  var(--type-h5-weight);
+  --type-team-sm-spacing: var(--type-h5-spacing);
+
+  --type-meta-row-size:    var(--type-h5-size);
+  --type-meta-row-weight:  var(--type-h5-weight);
+  --type-meta-row-spacing: var(--type-h5-spacing);
+
+  /* Stat numbers */
+  --type-stat-num-size:    var(--type-h3-size);
+  --type-stat-num-weight:  var(--type-h3-weight);
+  --type-stat-num-spacing: var(--type-h3-spacing);
+
+  /* Standings rows + event feed rows */
+  --type-standings-size:    var(--type-label-size);
+  --type-standings-weight:  var(--type-label-weight);
+  --type-standings-lh:      var(--type-label-lh);
+  --type-standings-spacing: var(--type-label-spacing);
+
+  --type-event-size:    var(--type-label-size);
+  --type-event-weight:  var(--type-label-weight);
+  --type-event-lh:      var(--type-label-lh);
+  --type-event-spacing: var(--type-label-spacing);
+}
+
+/* ══════════════════════════════════════════════
+   UTILITY CLASSES — apply directly to elements
+══════════════════════════════════════════════ */
+
+.t-ultra-large {
+  font-size:      var(--type-ultra-large-size);
+  font-weight:    var(--type-ultra-large-weight);
+  line-height:    var(--type-ultra-large-lh);
+  letter-spacing: var(--type-ultra-large-spacing);
+}
+.t-large {
+  font-size:      var(--type-large-size);
+  font-weight:    var(--type-large-weight);
+  line-height:    var(--type-large-lh);
+  letter-spacing: var(--type-large-spacing);
+}
+.t-h1 {
+  font-size:      var(--type-h1-size);
+  font-weight:    var(--type-h1-weight);
+  line-height:    var(--type-h1-lh);
+  letter-spacing: var(--type-h1-spacing);
+}
+.t-h2 {
+  font-size:      var(--type-h2-size);
+  font-weight:    var(--type-h2-weight);
+  line-height:    var(--type-h2-lh);
+  letter-spacing: var(--type-h2-spacing);
+}
+.t-h3 {
+  font-size:      var(--type-h3-size);
+  font-weight:    var(--type-h3-weight);
+  line-height:    var(--type-h3-lh);
+  letter-spacing: var(--type-h3-spacing);
+}
+.t-h4 {
+  font-size:      var(--type-h4-size);
+  font-weight:    var(--type-h4-weight);
+  line-height:    var(--type-h4-lh);
+  letter-spacing: var(--type-h4-spacing);
+}
+.t-h5 {
+  font-size:      var(--type-h5-size);
+  font-weight:    var(--type-h5-weight);
+  line-height:    var(--type-h5-lh);
+  letter-spacing: var(--type-h5-spacing);
+}
+.t-h5-caps {
+  font-size:      var(--type-h5-caps-size);
+  font-weight:    var(--type-h5-caps-weight);
+  line-height:    var(--type-h5-caps-lh);
+  letter-spacing: var(--type-h5-caps-spacing);
+  text-transform: var(--type-h5-caps-transform);
+}
+.t-h6 {
+  font-size:      var(--type-h6-size);
+  font-weight:    var(--type-h6-weight);
+  line-height:    var(--type-h6-lh);
+  letter-spacing: var(--type-h6-spacing);
+}
+.t-h6-caps {
+  font-size:      var(--type-h6-caps-size);
+  font-weight:    var(--type-h6-caps-weight);
+  line-height:    var(--type-h6-caps-lh);
+  letter-spacing: var(--type-h6-caps-spacing);
+  text-transform: var(--type-h6-caps-transform);
+}
+.t-h7 {
+  font-size:      var(--type-h7-size);
+  font-weight:    var(--type-h7-weight);
+  line-height:    var(--type-h7-lh);
+  letter-spacing: var(--type-h7-spacing);
+  text-transform: var(--type-h7-transform);
+}
+.t-label {
+  font-size:      var(--type-label-size);
+  font-weight:    var(--type-label-weight);
+  line-height:    var(--type-label-lh);
+  letter-spacing: var(--type-label-spacing);
+}
+.t-small {
+  font-size:      var(--type-small-size);
+  font-weight:    var(--type-small-weight);
+  line-height:    var(--type-small-lh);
+  letter-spacing: var(--type-small-spacing);
+}
+.t-caption {
+  font-size:      var(--type-caption-size);
+  font-weight:    var(--type-caption-weight);
+  line-height:    var(--type-caption-lh);
+  letter-spacing: var(--type-caption-spacing);
+  text-transform: var(--type-caption-transform);
+}
