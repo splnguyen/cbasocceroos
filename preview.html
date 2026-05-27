@@ -56,7 +56,7 @@ html, body {
 .sidebar-logo-icon {
   width: 32px;
   height: 32px;
-  background: var(--color-yellow-bright);
+  background: var(--color-brand-yellow);
   border-radius: 6px;
   display: flex;
   align-items: center;
@@ -126,8 +126,8 @@ html, body {
 }
 
 .list-item.active {
-  background: rgba(232,196,74,0.08);
-  border-left-color: var(--color-yellow-bright);
+  background: rgba(255,255,0,0.08);
+  border-left-color: var(--color-brand-yellow);
 }
 
 .list-item-dot {
@@ -140,7 +140,7 @@ html, body {
 }
 
 .list-item.active .list-item-dot {
-  background: var(--color-yellow-bright);
+  background: var(--color-brand-yellow);
 }
 
 .list-item-label {
@@ -272,7 +272,7 @@ html, body {
 .loading-dot {
   width: 6px; height: 6px;
   border-radius: 50%;
-  background: var(--color-yellow-bright);
+  background: var(--color-brand-yellow);
   animation: loadPulse 0.8s ease-in-out infinite alternate;
 }
 
@@ -338,46 +338,16 @@ html, body {
 
       <div class="list-section-label">Upcoming — Knockout</div>
 
-      <div class="list-item" data-src="screen-comingup-knockout.html?scenario=r32_unknown" data-label="Coming Up — Opponent TBD" data-tag="R32">
+      <div class="list-item" data-src="screen-comingup-knockout.html?variant=unknown" data-label="Coming Up KO — Opponent TBD" data-tag="KO">
         <div class="list-item-dot"></div>
-        <div class="list-item-label">Coming Up — Opp. TBD</div>
-        <div class="list-item-tag">R32</div>
+        <div class="list-item-label">Coming Up KO — Opp. TBD</div>
+        <div class="list-item-tag">KO</div>
       </div>
 
-      <div class="list-item" data-src="screen-comingup-knockout.html?scenario=r32_known" data-label="Coming Up — Opponent Known" data-tag="R32">
+      <div class="list-item" data-src="screen-comingup-knockout.html?variant=known" data-label="Coming Up KO — Opponent Known" data-tag="KO">
         <div class="list-item-dot"></div>
-        <div class="list-item-label">Coming Up — Opp. Known</div>
-        <div class="list-item-tag">R32</div>
-      </div>
-
-      <div class="list-item" data-src="screen-comingup-knockout.html?scenario=r16_unknown" data-label="Coming Up — Round of 16 TBD" data-tag="R16">
-        <div class="list-item-dot"></div>
-        <div class="list-item-label">Coming Up — Opp. TBD</div>
-        <div class="list-item-tag">R16</div>
-      </div>
-
-      <div class="list-item" data-src="screen-comingup-knockout.html?scenario=r16_known" data-label="Coming Up — Round of 16 Known" data-tag="R16">
-        <div class="list-item-dot"></div>
-        <div class="list-item-label">Coming Up — Opp. Known</div>
-        <div class="list-item-tag">R16</div>
-      </div>
-
-      <div class="list-item" data-src="screen-comingup-knockout.html?scenario=qf_known" data-label="Coming Up — Quarter-final" data-tag="QF">
-        <div class="list-item-dot"></div>
-        <div class="list-item-label">Coming Up — Quarter-final</div>
-        <div class="list-item-tag">QF</div>
-      </div>
-
-      <div class="list-item" data-src="screen-comingup-knockout.html?scenario=sf_known" data-label="Coming Up — Semi-final" data-tag="SF">
-        <div class="list-item-dot"></div>
-        <div class="list-item-label">Coming Up — Semi-final</div>
-        <div class="list-item-tag">SF</div>
-      </div>
-
-      <div class="list-item" data-src="screen-comingup-knockout.html?scenario=final_known" data-label="Coming Up — Final" data-tag="FIN">
-        <div class="list-item-dot"></div>
-        <div class="list-item-label">Coming Up — Final</div>
-        <div class="list-item-tag">FIN</div>
+        <div class="list-item-label">Coming Up KO — Opp. Known</div>
+        <div class="list-item-tag">KO</div>
       </div>
 
       <div class="list-section-label">Results</div>
@@ -416,6 +386,14 @@ html, body {
         <div class="list-item-tag">R32</div>
       </div>
 
+      <div class="list-section-label">Tournament</div>
+
+      <div class="list-item" data-src="screen-tournament-countdown.html" data-label="Tournament Countdown" data-tag="PRE">
+        <div class="list-item-dot"></div>
+        <div class="list-item-label">Tournament Countdown</div>
+        <div class="list-item-tag">PRE</div>
+      </div>
+
       <div class="list-section-label">Coming soon</div>
 
       <div class="list-item disabled" style="opacity:0.3;cursor:default;" data-disabled="true">
@@ -442,8 +420,8 @@ html, body {
 
     <div class="sidebar-footer">
       <div class="footer-note">
-        <strong>17 screens</strong> · 11 active · 4 coming soon
-        <br>Mock data · api-football
+        <strong>13 screens</strong> · live api-football
+        <br>+ 4 coming soon
       </div>
     </div>
 

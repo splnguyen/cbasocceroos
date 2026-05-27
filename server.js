@@ -8,7 +8,8 @@ const fs = require('fs');
 const path = require('path');
 const { URL } = require('url');
 const { loadEnvFiles } = require('./lib/load-env');
-const { fetchMatch, fetchUpcoming, getApiFootballKey } = require('./lib/match-service');
+const { fetchMatch, fetchUpcoming, fetchUpcomingList, getApiFootballKey } = require('./lib/match-service');
+const { fetchStandings } = require('./lib/standings-service');
 
 loadEnvFiles();
 
@@ -77,6 +78,46 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 500, { ok: false, error: err.message });
       }
       console.error('[api/match]', err);
+      return sendJson(res, 502, { ok: false, error: err.message });
+    }
+  }
+
+  if (req.url?.startsWith('/api/standings')) {
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204);
+      return res.end();
+    }
+    if (req.method !== 'GET') {
+      return sendJson(res, 405, { error: 'Method not allowed' });
+    }
+    try {
+      const data = await fetchStandings(parseQuery(req.url));
+      return sendJson(res, 200, data);
+    } catch (err) {
+      if (err.code === 'MISSING_API_KEY') {
+        return sendJson(res, 500, { ok: false, error: err.message });
+      }
+      console.error('[api/standings]', err);
+      return sendJson(res, 502, { ok: false, error: err.message });
+    }
+  }
+
+  if (req.url?.startsWith('/api/upcoming-list')) {
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204);
+      return res.end();
+    }
+    if (req.method !== 'GET') {
+      return sendJson(res, 405, { error: 'Method not allowed' });
+    }
+    try {
+      const data = await fetchUpcomingList(parseQuery(req.url));
+      return sendJson(res, 200, data);
+    } catch (err) {
+      if (err.code === 'MISSING_API_KEY') {
+        return sendJson(res, 500, { ok: false, error: err.message });
+      }
+      console.error('[api/upcoming-list]', err);
       return sendJson(res, 502, { ok: false, error: err.message });
     }
   }

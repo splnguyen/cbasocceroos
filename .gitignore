@@ -12,6 +12,9 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Claude Code — per-user permissions (keep launch.json shared)
+.claude/settings.local.json
+
 # Secrets
 .env
 .env.local

@@ -13,7 +13,7 @@
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
   --bg:   var(--color-off-black);
-  --gold: var(--color-yellow-bright);
+  --gold: var(--color-brand-yellow);
   --white:var(--color-white);
 }
 html,body{width:1080px;height:1920px;overflow:hidden;background:var(--bg);font-family:'CBABeaconSans',sans-serif;color:var(--white);}
@@ -38,12 +38,12 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:var(--bg);font-f
 .bg-scores{display:flex;align-items:flex-start;justify-content:center;padding:0 60px;}
 .bg-tcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:30px;}
 .bg-score{font-size:300px;font-weight:800;line-height:0.9;}
-.bg-score.home{color:var(--color-yellow-bright);}
-.bg-score.away{color:var(--color-purple-light);}
+.bg-score.home{color:var(--color-white);}
+.bg-score.away{color:var(--color-mid-grey);}
 .bg-flag{width:150px;height:150px;border-radius:50%;background:#555;}
 .bg-tname{font-size:42px;font-weight:800;text-transform:uppercase;text-align:center;}
-.bg-tname.home{color:var(--color-yellow-bright);}
-.bg-tname.away{color:var(--color-purple-light);}
+.bg-tname.home{color:var(--color-white);}
+.bg-tname.away{color:var(--color-mid-grey);}
 .bg-ccol{width:260px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;align-self:stretch;}
 .bg-vseg{flex:1;width:2px;background:#555;}
 .bg-clock{font-size:60px;font-weight:800;text-align:center;padding:20px 0;}
@@ -53,19 +53,19 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:var(--bg);font-f
 .bg-poss-lbl{font-size:24px;font-weight:800;text-transform:uppercase;text-align:center;}
 .bg-poss-row{display:flex;align-items:center;gap:16px;}
 .bg-poss-pct{font-size:24px;font-weight:800;min-width:56px;}
-.bg-poss-pct.home{color:var(--color-yellow-bright);}
-.bg-poss-pct.away{color:var(--color-purple-bright);}
+.bg-poss-pct.home{color:var(--color-white);}
+.bg-poss-pct.away{color:var(--color-mid-grey);}
 .bg-poss-bar{flex:1;height:24px;border-radius:10px;overflow:hidden;display:flex;}
-.bg-poss-fill{background:var(--color-yellow-bright);border-radius:10px 0 0 10px;}
-.bg-poss-rest{background:var(--color-purple-bright);flex:1;border-radius:0 10px 10px 0;}
+.bg-poss-fill{background:var(--color-white);border-radius:10px 0 0 10px;}
+.bg-poss-rest{background:var(--color-mid-grey);flex:1;border-radius:0 10px 10px 0;}
 /* Stat cards */
 .bg-stats{display:flex;gap:16px;height:120px;}
 .bg-stat{background:var(--color-charcoal);border-radius:10px;flex:1;padding:16px;display:flex;flex-direction:column;gap:12px;justify-content:center;}
 .bg-slbl{font-size:16px;font-weight:800;text-transform:uppercase;text-align:center;}
 .bg-svals{display:flex;justify-content:space-between;}
 .bg-sval{font-size:42px;font-weight:800;}
-.bg-sval.home{color:var(--color-yellow-bright);}
-.bg-sval.away{color:var(--color-purple-light);}
+.bg-sval.home{color:var(--color-white);}
+.bg-sval.away{color:var(--color-mid-grey);}
 /* Events */
 .bg-feed{background:var(--color-charcoal);border-radius:10px;padding:16px;flex:1;overflow:hidden;}
 .bg-erow{padding:10px 0;border-bottom:1px solid var(--color-dark-grey);font-size:24px;font-weight:800;display:flex;gap:16px;}
@@ -114,8 +114,9 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:var(--bg);font-f
 /* Confetti piece — fall with horizontal drift + spin */
 @keyframes confettiFall{
   0%   {opacity:0;transform:translate3d(0,0,0) rotate(0deg);}
-  8%   {opacity:1;}
-  100% {opacity:0;transform:translate3d(var(--dx,0px),120vh,0) rotate(var(--r,720deg));}
+  6%   {opacity:1;}
+  90%  {opacity:1;}
+  100% {opacity:0;transform:translate3d(var(--dx,0px),2100px,0) rotate(var(--r,720deg));}
 }
 
 /* Fade out — applied to individual elements */
@@ -159,25 +160,12 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:var(--bg);font-f
   opacity:0;
   will-change:transform,opacity;
 }
-.confetti-piece.c0{background:var(--color-purple-light);}
-.confetti-piece.c1{background:var(--color-white);}
-.confetti-piece.c2{background:var(--color-purple-bright);}
-.confetti-piece.c3{background:var(--color-mid-grey);}
+/* Confetti palette — brand-yellow + white only */
+.confetti-piece.c0{background:var(--color-white);}
+.confetti-piece.c1{background:var(--color-brand-yellow);}
 
-/* ⚽ ball */
-.goal-ball{font-size:300px;line-height:1;display:block;opacity:0;position:relative;z-index:2;}
-.goal-overlay.playing .goal-ball{
-  animation:ballIn 2s ease-out 0.1s forwards;
-}
-.goal-overlay.playing .goal-ball.settled{
-  opacity:1;
-  transform:scale(1);
-  animation:spinSlow 8s linear infinite;
-}
-.goal-overlay.leaving .goal-ball{
-  animation:fadeOut 0.8s ease forwards;
-  opacity:1;
-}
+/* (⚽ ball removed — celebration now uses confetti + text only) */
+
 
 /* Goal! text — per-letter stagger */
 .goal-word{
@@ -196,7 +184,10 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:var(--bg);font-f
   animation:letterIn 0.7s cubic-bezier(.34,1.56,.64,1) calc(0.5s + var(--d,0s)) forwards;
 }
 .goal-overlay.leaving .goal-word span{
+  /* Lock transform at final letterIn state so letters fade out at full size
+     instead of snapping back to the base scale(0.1) translateY(40px). */
   animation:fadeOut 0.8s ease forwards;
+  transform:scale(1) translateY(0);
   opacity:1;
 }
 
@@ -282,18 +273,17 @@ function flagImg(name,size,extra,greyscale){const svg=getFlagSVG(name)||'';const
     <div class="bg-stat"><div class="bg-slbl">FOULS</div><div class="bg-svals"><span class="bg-sval home">13</span><span class="bg-sval away">12</span></div></div>
   </div>
   <div class="bg-feed">
-    <div class="bg-erow"><span style="color:#aaa;width:80px;">108'</span><span style="color:var(--color-yellow-bright);">GOAL</span><span style="flex:1;text-align:right;color:var(--color-yellow-bright);">Messi</span></div>
-    <div class="bg-erow"><span style="color:#aaa;width:80px;">90'</span><span style="color:var(--color-purple-light);">GOAL</span><span style="flex:1;text-align:right;color:var(--color-purple-light);">Mbappé</span></div>
-    <div class="bg-erow"><span style="color:#aaa;width:80px;">89'</span><span style="color:var(--color-yellow-bright);">Yellow</span><span style="flex:1;text-align:right;color:var(--color-yellow-bright);">Montiel</span></div>
-    <div class="bg-erow"><span style="color:#aaa;width:80px;">43'</span><span style="color:var(--color-purple-light);">GOAL</span><span style="flex:1;text-align:right;color:var(--color-purple-light);">Mbappé</span></div>
-    <div class="bg-erow"><span style="color:#aaa;width:80px;">36'</span><span style="color:var(--color-yellow-bright);">GOAL</span><span style="flex:1;text-align:right;color:var(--color-yellow-bright);">Messi</span></div>
+    <div class="bg-erow"><span style="color:#aaa;width:80px;">108'</span><span style="color:var(--color-brand-yellow);">GOAL</span><span style="flex:1;text-align:right;color:var(--color-white);">Messi</span></div>
+    <div class="bg-erow"><span style="color:#aaa;width:80px;">90'</span><span style="color:var(--color-brand-yellow);">GOAL</span><span style="flex:1;text-align:right;color:var(--color-mid-grey);">Mbappé</span></div>
+    <div class="bg-erow"><span style="color:#aaa;width:80px;">89'</span><span style="color:var(--color-brand-yellow);">Yellow</span><span style="flex:1;text-align:right;color:var(--color-white);">Montiel</span></div>
+    <div class="bg-erow"><span style="color:#aaa;width:80px;">43'</span><span style="color:var(--color-brand-yellow);">GOAL</span><span style="flex:1;text-align:right;color:var(--color-mid-grey);">Mbappé</span></div>
+    <div class="bg-erow"><span style="color:#aaa;width:80px;">36'</span><span style="color:var(--color-brand-yellow);">GOAL</span><span style="flex:1;text-align:right;color:var(--color-white);">Messi</span></div>
   </div>
 </div>
 
 <!-- ── GOAL OVERLAY ── -->
 <div class="goal-overlay" id="goal-overlay">
   <div class="goal-confetti" id="goal-confetti"></div>
-  <div class="goal-ball">⚽</div>
   <div class="goal-word" id="goal-word"><span style="--d:0s">G</span><span style="--d:0.08s">o</span><span style="--d:0.16s">a</span><span style="--d:0.24s">l</span><span style="--d:0.32s">!</span></div>
   <div class="goal-scorer" id="goal-scorer">Messi scores for Argentina</div>
 </div>
@@ -327,17 +317,22 @@ function spawnConfetti() {
   const layer = document.getElementById('goal-confetti');
   if (!layer) return;
   layer.innerHTML = '';
-  const N = 120;
+  // 240 pieces (2× previous), white + brand-yellow alternating.
+  // Wide delay stagger (0 → 2.4s) so at peak burst there's always a mix of
+  // pieces at the top of the screen entering, middle pieces falling, and
+  // late pieces finishing — visually covering the full 1920px portrait.
+  const N = 240;
   for (let i = 0; i < N; i++) {
     const p = document.createElement('div');
-    p.className = 'confetti-piece c' + (i % 4);
-    const dx = (Math.random() - 0.5) * 600;
-    const r  = (Math.random() < 0.5 ? -1 : 1) * (360 + Math.random() * 720);
-    const delay = 0.8 + Math.random() * 0.5;
-    const dur   = 2.4 + Math.random() * 1.8;
+    p.className = 'confetti-piece c' + (i % 2);
+    const dx = (Math.random() - 0.5) * 1080;     // ±540px → full screen width drift
+    const r  = (Math.random() < 0.5 ? -1 : 1) * (360 + Math.random() * 1080);
+    const delay = Math.random() * 2.4;            // 0 – 2.4s staggered burst
+    const dur   = 2.6 + Math.random() * 1.8;     // 2.6 – 4.4s fall
     p.style.left   = (Math.random() * 100) + '%';
-    p.style.width  = (8 + Math.random() * 10) + 'px';
-    p.style.height = (14 + Math.random() * 14) + 'px';
+    p.style.top    = '-60px';                     // just above the overlay top
+    p.style.width  = (10 + Math.random() * 12) + 'px';
+    p.style.height = (16 + Math.random() * 16) + 'px';
     p.style.setProperty('--dx', dx + 'px');
     p.style.setProperty('--r',  r  + 'deg');
     p.style.animation = `confettiFall ${dur}s cubic-bezier(.3,.6,.5,1) ${delay}s forwards`;
@@ -350,25 +345,19 @@ function triggerGoal(scorerText) {
   if (settleTimer) { clearTimeout(settleTimer); settleTimer = null; }
 
   const overlay = document.getElementById('goal-overlay');
-  const ball    = document.querySelector('.goal-ball');
   document.getElementById('goal-scorer').textContent = scorerText || 'Goal!';
 
   // Full reset
   overlay.className = 'goal-overlay';
-  ball.classList.remove('settled');
   spawnConfetti();
   void overlay.offsetWidth; // force reflow
 
   // Entrance
   overlay.classList.add('playing');
 
-  // Switch ball to continuous spin after ballIn completes (2s + 0.1s delay)
-  settleTimer = setTimeout(() => ball.classList.add('settled'), 2100);
-
-  // Hold 5s after everything is in (2.5s settle + 5s = 7.5s), then fade out
+  // Hold ~5s after everything is in, then fade out.
   goalTimer = setTimeout(() => {
     overlay.classList.remove('playing');
-    ball.classList.remove('settled');
     overlay.classList.add('leaving');
     goalTimer = setTimeout(() => {
       overlay.className = 'goal-overlay';

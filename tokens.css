@@ -1,8 +1,8 @@
 /*
  * FIFA World Cup 2026 Dashboard — Design Tokens
  * ==============================================
- * Source: Figma variable export (dark mode)
- * Last updated: May 2026
+ * Scheme: white / grey / brand-yellow (no purple, no yellow-bright)
+ * Source: Figma — eBWaSO7mwm2Ja5NiEFDHAo
  *
  * Usage: <link rel="stylesheet" href="tokens.css">
  * All screens should import this file and reference
@@ -11,26 +11,32 @@
 
 :root {
 
-  /* ── PRIMITIVES — from Figma dark token set ── */
-  --color-black:         hsl(0 0% 0%);
-  --color-blue-dark:     hsl(213 81% 21%);
-  --color-charcoal:      hsl(0 0% 23%);
-  --color-dark-grey:     hsl(0 0% 45%);
-  --color-green-bright:  hsl(138 91% 52%);
-  --color-mid-grey:      hsl(0 0% 62%);
-  --color-off-black:     hsl(0 0% 13%);
-  --color-purple-bright: hsl(248 100% 66%);
-  --color-purple-dark:   hsl(251 51% 38%);
-  --color-purple-light:  hsl(248 100% 79%);
-  --color-red-bright:    hsl(0 100% 50%);
-  --color-white:         hsl(0 0% 100%);
-  --color-yellow-bright: hsl(47 100% 66%);
+  /* ── PRIMITIVES — Figma "dark" variable set ── */
+  --color-black:         #000000;
+  --color-brand-yellow:  #ffff00;
+  --color-charcoal:      #3a3a3a;
+  --color-dark-grey:     #727272;
+  --color-mid-grey:      #9e9e9e;
+  --color-off-black:     #212121;
+  --color-red-bright:    #ff0000;
+  --color-white:         #ffffff;
 
-  /* ── SEMANTIC ALIASES — what each colour is used for ── */
+  /* Unprefixed aliases match Figma variable names so screens
+     copied straight from `get_design_context` work without renaming. */
+  --black:         var(--color-black);
+  --brand-yellow:  var(--color-brand-yellow);
+  --charcoal:      var(--color-charcoal);
+  --dark-grey:     var(--color-dark-grey);
+  --mid-grey:      var(--color-mid-grey);
+  --off-black:     var(--color-off-black);
+  --red-bright:    var(--color-red-bright);
+  --white:         var(--color-white);
+
+  /* ── SEMANTIC ALIASES ── */
 
   /* Backgrounds */
-  --bg:              var(--color-charcoal);   /* page background */
-  --bg-card:         var(--color-off-black);  /* card / tile background */
+  --bg:              var(--color-off-black);  /* page background */
+  --bg-card:         var(--color-charcoal);   /* card / tile background */
   --bg-overlay:      var(--color-black);      /* goal overlay, dev controls */
 
   /* Text */
@@ -42,47 +48,44 @@
   --divider-strong:  var(--color-white);
   --divider-subtle:  var(--color-dark-grey);
 
-  /* Team colours */
-  --team-home:       var(--color-yellow-bright);   /* gold — home team */
-  --team-away:       var(--color-purple-bright);   /* purple — away team */
+  /* Team colours — home/away high-contrast pair */
+  --team-home:       var(--color-white);
+  --team-away:       var(--color-mid-grey);
 
-  /* Standings rows — descending emphasis */
-  --standing-rank-1: var(--color-purple-bright);
-  --standing-rank-2: var(--color-purple-dark);
-  --standing-rank-3: hsl(251 51% 28%);             /* darker shade of purple-dark */
-  --standing-rank-4: var(--color-dark-grey);
+  /* Group-stage tile states (Figma: tile_group_country) */
+  --tile-qualified:  var(--color-white);      /* through to next round */
+  --tile-contention: var(--color-mid-grey);   /* still in contention */
+  --tile-eliminated: var(--color-dark-grey);  /* knocked out */
 
   /* Accents */
-  --accent-gold:     var(--color-yellow-bright);
-  --accent-green:    var(--color-green-bright);    /* "just updated" badge, now-playing events */
-  --accent-red:      var(--color-red-bright);      /* live dot, red cards */
-  --accent-purple:   var(--color-purple-bright);
+  --accent-brand:    var(--color-brand-yellow);
+  --accent-red:      var(--color-red-bright);
 
   /* Countdown */
-  --countdown-color: var(--color-yellow-bright);
+  --countdown-color: var(--color-brand-yellow);
 
   /* Badges */
-  --badge-updated-bg:   var(--color-off-black);
-  --badge-updated-text: var(--color-white);
+  --badge-updated-bg:   var(--color-black);
+  --badge-updated-text: var(--color-brand-yellow);
   --badge-live-border:  var(--color-white);
   --badge-live-text:    var(--color-white);
-  --badge-fresh-bg:     var(--color-green-bright);
+  --badge-fresh-bg:     var(--color-brand-yellow);
   --badge-fresh-text:   var(--color-off-black);
 
   /* Events feed */
-  --event-goal:     var(--color-yellow-bright);
-  --event-card:     var(--color-yellow-bright);
+  --event-goal:     var(--color-brand-yellow);
+  --event-card:     var(--color-brand-yellow);
   --event-redcard:  var(--color-red-bright);
-  --event-sub:      var(--color-purple-bright);
+  --event-sub:      var(--color-mid-grey);
   --event-var:      var(--color-mid-grey);
-  --event-now:      var(--color-green-bright);
+  --event-now:      var(--color-brand-yellow);
 
   /* Stat tiles */
-  --stat-home:      var(--color-yellow-bright);
-  --stat-away:      var(--color-purple-bright);
-  --stat-empty:     var(--color-mid-grey);
+  --stat-home:      var(--color-white);
+  --stat-away:      var(--color-mid-grey);
+  --stat-empty:     var(--color-dark-grey);
 
   /* Possession bar */
-  --poss-home:      var(--color-yellow-bright);
-  --poss-away:      var(--color-purple-bright);
+  --poss-home:      var(--color-white);
+  --poss-away:      var(--color-mid-grey);
 }

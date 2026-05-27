@@ -1,0 +1,202 @@
+/**
+ * Tournament Countdown screen.
+ *
+ * Data:  GET /api/upcoming-list?count=5    (?demo=1 → 2022 fixtures)
+ * Poll:  every 5 minutes (fixtures rarely change)
+ * Tick:  every 1 second (countdown timers, no API call)
+ *
+ * Demo: When the API returns 2022 fixtures, anchor "now" 15 days before the
+ * 2022 WC kickoff (2022-11-20) so the countdowns read like a pre-tournament
+ * state instead of being negative.
+ */
+
+(function () {
+  const POLL_MS = 5 * 60 * 1000;
+  const isDemo = new URLSearchParams(location.search).get('demo') === '1';
+
+  // Demo anchor: 2022 WC opening match was 20 Nov 2022 18:00 UTC.
+  // Pin "now" to 15 days before kickoff for a sensible countdown.
+  const DEMO_NOW = isDemo ? new Date('2022-11-05T18:00:00Z').getTime() : null;
+
+  const grid     = document.getElementById('grid');
+  const featured = document.getElementById('featured');
+  const badge    = document.getElementById('updatedBadge');
+  const cdRoot   = document.getElementById('countdown-cells');
+
+  let fixtures = [];        // [{ fixtureId, kickoffEpoch, ... }, ...]
+  let kickoffEpoch = null;  // first fixture's kickoff in ms
+
+  // ── Time helpers ─────────────────────────────────────────────────────────
+
+  const AEST = 'Australia/Sydney';
+
+  function aestParts(ms) {
+    const fmt = new Intl.DateTimeFormat('en-AU', {
+      timeZone: AEST,
+      weekday: 'long', day: 'numeric', month: 'long',
+      hour: 'numeric', minute: '2-digit', hour12: true,
+    });
+    const parts = fmt.formatToParts(new Date(ms));
+    const get = (t) => parts.find((p) => p.type === t)?.value ?? '';
+    return {
+      weekday: get('weekday'),
+      day: get('day'),
+      month: get('month'),
+      hour: get('hour'),
+      minute: get('minute'),
+      period: get('dayPeriod').toUpperCase().replace(/\./g, ''),
+    };
+  }
+
+  // → "TUESDAY 16 JUNE 5:00AM AEST"
+  function aestKickoffLine(ms) {
+    const p = aestParts(ms);
+    return `${p.weekday.toUpperCase()} ${p.day} ${p.month.toUpperCase()} ${p.hour}:${p.minute}${p.period} AEST`;
+  }
+
+  function nowMs() {
+    return DEMO_NOW ?? Date.now();
+  }
+
+  function pad2(n) { return String(Math.max(0, n)).padStart(2, '0'); }
+
+  function diffParts(ms) {
+    const secs = Math.max(0, Math.floor(ms / 1000));
+    const d = Math.floor(secs / 86400);
+    const h = Math.floor((secs % 86400) / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = secs % 60;
+    return { d, h, m, s };
+  }
+
+  // → "38d 24:03:18" (days + hh:mm:ss, only when remaining > 0)
+  function shortCountdown(ms) {
+    const { d, h, m, s } = diffParts(ms);
+    return `${d}d ${pad2(h)}:${pad2(m)}:${pad2(s)}`;
+  }
+
+  // ── Render ───────────────────────────────────────────────────────────────
+
+  function groupLabel(fix) {
+    // Prefer the proxy-attached group letter (e.g. "GROUP A").
+    if (fix.group) return fix.group.toUpperCase();
+    // Fallback: knockout rounds pass through unchanged; group-stage matchday
+    // strings have no letter, so just show "GROUP STAGE".
+    const r = fix.leagueRound || '';
+    if (/Group Stage/i.test(r)) return 'GROUP STAGE';
+    return (r || 'TBC').toUpperCase();
+  }
+
+  function venueText(fix) {
+    if (!fix.venue) return '';
+    return `, ${fix.venue.toUpperCase()}`;
+  }
+
+  function renderFeatured(fix) {
+    if (!fix) {
+      featured.innerHTML = '<div class="featured-empty">No upcoming fixtures.</div>';
+      return;
+    }
+    const group = groupLabel(fix);
+    const line = aestKickoffLine(fix.kickoffEpoch);
+    featured.innerHTML = `
+      <div class="featured-header">${group} <span class="pipe">|</span> ${line}</div>
+      <div class="featured-row">
+        <div class="featured-team">
+          <div class="featured-flag"><img alt="${fix.home.name}"></div>
+          <div class="featured-name">${(fix.home.name || '').toUpperCase()}</div>
+        </div>
+        <div class="featured-vs">VS</div>
+        <div class="featured-team">
+          <div class="featured-flag"><img alt="${fix.away.name}"></div>
+          <div class="featured-name">${(fix.away.name || '').toUpperCase()}</div>
+        </div>
+      </div>`;
+    featured.querySelectorAll('.featured-flag img').forEach((img) => setFlag(img, img.alt, null));
+  }
+
+  function tileHtml(fix) {
+    const group = groupLabel(fix);
+    const line  = aestKickoffLine(fix.kickoffEpoch);
+    const meta  = `${group} <span class="pipe">|</span> ${line}${venueText(fix)}`;
+    const homeCode = teamCode(fix.home.name);
+    const awayCode = teamCode(fix.away.name);
+    return `
+      <div class="tile-upcoming" data-kickoff="${fix.kickoffEpoch}">
+        <div class="tile-meta">${meta}</div>
+        <div class="tile-row">
+          <div class="tile-teams">
+            <div class="tile-team">
+              <div class="tile-flag"><img alt="${fix.home.name}"></div>
+              <div class="tile-code">${homeCode}</div>
+            </div>
+            <div class="tile-vs">vs</div>
+            <div class="tile-team">
+              <div class="tile-flag"><img alt="${fix.away.name}"></div>
+              <div class="tile-code">${awayCode}</div>
+            </div>
+          </div>
+          <div class="tile-countdown" data-kickoff="${fix.kickoffEpoch}">–</div>
+        </div>
+      </div>`;
+  }
+
+  function renderTiles(list) {
+    grid.innerHTML = list.map(tileHtml).join('');
+    grid.querySelectorAll('.tile-flag img').forEach((img) => setFlag(img, img.alt, null));
+  }
+
+  // ── Per-second countdown tick ────────────────────────────────────────────
+
+  function tickCountdowns() {
+    const now = nowMs();
+
+    // Featured: big day/hour/minute/second cells (first fixture)
+    if (cdRoot && kickoffEpoch != null) {
+      const remaining = Math.max(0, kickoffEpoch - now);
+      const { d, h, m, s } = diffParts(remaining);
+      cdRoot.querySelector('[data-unit="days"]').textContent    = pad2(d);
+      cdRoot.querySelector('[data-unit="hours"]').textContent   = pad2(h);
+      cdRoot.querySelector('[data-unit="minutes"]').textContent = pad2(m);
+      cdRoot.querySelector('[data-unit="seconds"]').textContent = pad2(s);
+    }
+
+    // Tile per-row countdowns
+    grid.querySelectorAll('.tile-countdown').forEach((el) => {
+      const k = Number(el.dataset.kickoff);
+      el.textContent = shortCountdown(Math.max(0, k - now));
+    });
+  }
+
+  // ── Fetch ────────────────────────────────────────────────────────────────
+
+  async function refresh() {
+    badge.textContent = 'Updating…';
+    try {
+      const url = isDemo ? '/api/upcoming-list?demo=1&count=5' : '/api/upcoming-list?count=5';
+      const res = await fetch(url, { cache: 'no-store' });
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.error || `HTTP ${res.status}`);
+
+      fixtures = (json.matches || []).map((f) => ({
+        ...f,
+        kickoffEpoch: f.kickoffEpoch || new Date(f.kickoffISO).getTime(),
+      }));
+
+      const [first, ...rest] = fixtures;
+      kickoffEpoch = first?.kickoffEpoch ?? null;
+
+      renderFeatured(first);
+      renderTiles(rest.slice(0, 4));
+      tickCountdowns();
+      badge.textContent = 'Just updated';
+    } catch (err) {
+      console.error('[tournament-countdown]', err);
+      badge.textContent = 'Update failed';
+    }
+  }
+
+  refresh();
+  setInterval(refresh, POLL_MS);
+  setInterval(tickCountdowns, 1000);
+})();
