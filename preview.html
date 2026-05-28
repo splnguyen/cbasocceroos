@@ -109,6 +109,37 @@ html, body {
   padding: 16px 24px 6px 24px;
 }
 
+/* ── Live / Demo mode toggle ─────────────────────────── */
+.mode-toggle {
+  margin: 6px 20px 12px;
+  display: flex;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+}
+.mode-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  color: #777;
+  font-family: 'CBABeaconSans', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.mode-btn:hover { color: #aaa; }
+.mode-btn.active {
+  background: var(--color-brand-yellow);
+  color: var(--color-off-black);
+}
+
 .list-item {
   display: flex;
   align-items: center;
@@ -300,6 +331,11 @@ html, body {
       <div class="sidebar-title">Screens</div>
     </div>
 
+    <div class="mode-toggle" role="group" aria-label="Data mode">
+      <button class="mode-btn" data-mode="live" type="button">Live</button>
+      <button class="mode-btn" data-mode="demo" type="button">Demo</button>
+    </div>
+
     <div class="screen-list" id="screen-list">
 
       <div class="list-section-label">Live</div>
@@ -394,6 +430,12 @@ html, body {
         <div class="list-item-tag">PRE</div>
       </div>
 
+      <div class="list-item" data-src="screen-tournament-draw.html" data-label="Tournament Draw" data-tag="BRKT">
+        <div class="list-item-dot"></div>
+        <div class="list-item-label">Tournament Draw</div>
+        <div class="list-item-tag">BRKT</div>
+      </div>
+
       <div class="list-section-label">Coming soon</div>
 
       <div class="list-item disabled" style="opacity:0.3;cursor:default;" data-disabled="true">
@@ -420,7 +462,7 @@ html, body {
 
     <div class="sidebar-footer">
       <div class="footer-note">
-        <strong>13 screens</strong> · live api-football
+        <strong>14 screens</strong> · live api-football
         <br>+ 4 coming soon
       </div>
     </div>
@@ -451,38 +493,73 @@ function scaleFrame() {
   iframe.style.transform = `scale(${scale})`;
 }
 
-// ── Navigation ───────────────────────────────────────────────
+// ── Navigation + Live/Demo mode ──────────────────────────────
 const previewFrame   = document.getElementById('preview-frame');
 const loadingOverlay = document.getElementById('loading-overlay');
 const frameLabel     = document.getElementById('frame-label');
 
+// Mode persists across reloads.
+let currentMode = localStorage.getItem('preview-mode') || 'live';
+
+// Returns the base data-src + ?demo=1 if mode is demo (preserves existing
+// query params, e.g. screen-comingup-knockout.html?variant=known).
+function applyMode(src, mode) {
+  const [path, query] = src.split('?');
+  const params = new URLSearchParams(query || '');
+  if (mode === 'demo') params.set('demo', '1');
+  else params.delete('demo');
+  const qs = params.toString();
+  return qs ? `${path}?${qs}` : path;
+}
+
 function goTo(src, label) {
   loadingOverlay.classList.add('show');
-  previewFrame.src = src;
+  previewFrame.src = applyMode(src, currentMode);
   frameLabel.textContent = label;
   previewFrame.onload = () => {
     loadingOverlay.classList.remove('show');
   };
 }
 
+function setMode(mode) {
+  if (mode !== 'live' && mode !== 'demo') return;
+  currentMode = mode;
+  localStorage.setItem('preview-mode', mode);
+  document.querySelectorAll('.mode-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+  // Reload current screen with the new mode.
+  const active = document.querySelector('.list-item.active');
+  if (active) goTo(active.dataset.src, active.dataset.label);
+}
+
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => setMode(btn.dataset.mode));
+});
+
 // ── List items ───────────────────────────────────────────────
 const items = document.querySelectorAll('.list-item:not([data-disabled])');
 
 items.forEach(item => {
   item.addEventListener('click', () => {
-    // Update active state
     document.querySelectorAll('.list-item').forEach(i => i.classList.remove('active'));
     item.classList.add('active');
-    // Navigate
     goTo(item.dataset.src, item.dataset.label);
   });
 });
 
 // ── Boot ─────────────────────────────────────────────────────
-// Activate first item
 items[0]?.classList.add('active');
+// Set the initial iframe src + mode-button state (replaces the hardcoded
+// src="screen-matchlive.html" in markup so the mode is honoured on first load).
+document.querySelectorAll('.mode-btn').forEach(b => {
+  b.classList.toggle('active', b.dataset.mode === currentMode);
+});
+if (items[0]) {
+  previewFrame.src = applyMode(items[0].dataset.src, currentMode);
+  frameLabel.textContent = items[0].dataset.label;
+}
 
-// Scale on load and resize
 window.addEventListener('resize', scaleFrame);
 previewFrame.addEventListener('load', scaleFrame);
 scaleFrame();

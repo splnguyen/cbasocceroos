@@ -108,8 +108,9 @@
   function renderFeed(events) {
     const feed = $('feed-card');
     if (!feed) return;
-    // Most-recent N events. Pair has tighter vertical budget → fewer rows.
-    const limit = isPair ? 3 : 5;
+    // Most-recent N events. Single feed-card is a fixed 408px (4 rows of 76px);
+    // pair has a tighter vertical budget → 3 rows.
+    const limit = isPair ? 3 : 4;
     const recent = [...(events || [])].reverse().slice(0, limit);
     feed.innerHTML = recent.map((ev, i) => {
       const side = eventSide(ev);
@@ -154,6 +155,9 @@
     $('poss-home').textContent = `${possH}%`;
     $('poss-away').textContent = `${possA}%`;
     $('poss-bar-home').style.width = `${possH}%`;
+    // Flag circles flanking the possession bar (single screen only).
+    setFlag($('poss-flag-home'), state.home.name, state.home.logo);
+    setFlag($('poss-flag-away'), state.away.name, state.away.logo);
 
     const stats = [
       ['shots', state.shots],
