@@ -38,6 +38,13 @@
   let homeId = null;
   let awayId = null;
 
+  // ── Match clock (mm:ss, ticks locally between API polls) ─────────────────
+  // api-football gives `elapsed` in whole minutes only, so we synthesise the
+  // seconds locally: record the minute + a timestamp, then count up every sec.
+  let clockBaseMin = null;   // minutes from the API at last sync
+  let clockBaseTs  = 0;      // Date.now() when that minute was received
+  let clockRunning = false;  // only ticks during live, in-play periods
+
   function setStatus(msg, isError = false) {
     const el = $('api-status');
     if (el) {
@@ -127,10 +134,40 @@
     }).join('');
   }
 
+  // Compact "MM+E'" form used by the small secondary (also-live) clock.
   function formatClock(state) {
     const tick = state.extra ? `${state.elapsed}+${state.extra}` : String(state.elapsed ?? '');
     const suppress = state.isFinished || /Half Time|AET|Penalties/i.test(state.period || '');
     return tick + (suppress ? '' : "'");
+  }
+
+  // Main mm:ss clock. Re-baselines whenever the API minute advances; paused
+  // outside live in-play periods (HT / FT / Penalties / AET).
+  function clockIsRunning(state) {
+    return !!state.isLive && !/Half Time|Full Time|Penalties|AET/i.test(state.period || '');
+  }
+  function syncClock(state) {
+    const mins = state.elapsed ?? 0;
+    if (clockIsRunning(state)) {
+      if (clockBaseMin === null || mins > clockBaseMin) {
+        clockBaseMin = mins;
+        clockBaseTs = Date.now();
+      }
+      clockRunning = true;
+    } else {
+      clockRunning = false;
+      clockBaseMin = mins;
+    }
+    renderClock();
+  }
+  function renderClock() {
+    const el = $('match-clock');
+    if (!el || clockBaseMin === null) return;
+    let totalSec = clockBaseMin * 60;
+    if (clockRunning) totalSec += Math.floor((Date.now() - clockBaseTs) / 1000);
+    const mm = Math.floor(totalSec / 60);
+    const ss = totalSec % 60;
+    el.textContent = `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
   }
 
   // ── Primary render ──────────────────────────────────────────────────────
@@ -140,7 +177,7 @@
 
     $('score-home').textContent = state.scoreH ?? '–';
     $('score-away').textContent = state.scoreA ?? '–';
-    $('match-clock').textContent = formatClock(state);
+    syncClock(state);
     $('match-period').textContent = state.period ?? '–';
     $('meta-group').textContent = state.metaGroup ?? '–';
     $('meta-venue').textContent = state.metaVenue ?? '–';
@@ -291,4 +328,6 @@
   }
 
   tick();
+  // Local 1s ticker so the mm:ss clock counts up smoothly between API polls.
+  setInterval(() => { if (clockRunning) renderClock(); }, 1000);
 })();

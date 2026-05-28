@@ -60,11 +60,12 @@ html,body{
 
 /* ── Score block (fixed 481px tall, Figma h-962 ÷2) ── */
 .score-section{
+  position:relative;                 /* anchor for the absolutely-centred clock */
   display:flex;align-items:stretch;justify-content:space-between;
-  gap:60px;padding:0 60px;height:481px;flex-shrink:0;
+  gap:380px;padding:0 60px;height:481px;flex-shrink:0;
 }
 .team-col{
-  flex:1;display:flex;flex-direction:column;align-items:center;
+  flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;
   justify-content:space-between;
 }
 .score-num{
@@ -82,7 +83,10 @@ html,body{
   color:var(--white);text-transform:uppercase;text-align:center;white-space:nowrap;
 }
 .centre-col{
-  width:260px;flex-shrink:0;
+  /* Absolutely centred on the screen so the clock + dividers never shift
+     when the two scores have different digit widths. */
+  position:absolute;left:50%;top:0;height:100%;transform:translateX(-50%);
+  width:260px;
   display:flex;flex-direction:column;align-items:center;justify-content:space-between;
 }
 .vert-seg{
@@ -167,11 +171,11 @@ html,body{
   font-size:30px;font-weight:800;letter-spacing:1.5px;
   color:var(--brand-yellow);
 }
-.feed-min{width:110px;flex-shrink:0;}
-.feed-type{flex:1;}
-.feed-player{width:216px;flex-shrink:0;text-align:right;}
+.feed-min{width:110px;flex-shrink:0;white-space:nowrap;}      /* Figma w-220 ÷2 */
+.feed-type{flex:1;min-width:0;white-space:nowrap;}
+.feed-player{width:216px;flex-shrink:0;text-align:right;white-space:nowrap;}  /* Figma w-432 ÷2 */
 .feed-desc{
-  padding-left:110px;
+  padding-left:110px;white-space:nowrap;
   font-size:24px;font-weight:700;letter-spacing:1.2px;
   color:var(--white);
 }
