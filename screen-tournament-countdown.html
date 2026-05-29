@@ -144,6 +144,12 @@ html,body{
   color:var(--brand-yellow);white-space:nowrap;
   font-variant-numeric:tabular-nums;
 }
+
+/* ── Skeleton loading state ── */
+@keyframes skel-pulse { 0%,100% { opacity:.2; } 50% { opacity:.45; } }
+.skel{background:var(--charcoal);border-radius:10px;animation:skel-pulse 1.6s ease-in-out infinite;}
+.skel-featured{height:280px;width:100%;}
+.skel-tile{height:155px;width:100%;}
 </style>
 </head><body>
 <div class="screen">

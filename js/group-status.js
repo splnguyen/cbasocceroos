@@ -116,6 +116,8 @@
     }
   }
 
+  // Show placeholder cards immediately so the screen isn't blank while loading.
+  grid.innerHTML = letters.map(placeholderHtml).join('');
   fetchOnce();
   setInterval(fetchOnce, POLL_MS);
 })();

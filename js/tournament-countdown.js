@@ -180,6 +180,14 @@
 
   // ── Fetch ────────────────────────────────────────────────────────────────
 
+  // ── Skeleton ─────────────────────────────────────────────────────────────
+
+  function renderSkeleton() {
+    featured.innerHTML = '<div class="skel skel-featured"></div>';
+    ausTile.innerHTML  = '<div class="skel skel-tile"></div>';
+    grid.innerHTML     = '<div class="skel skel-tile"></div><div class="skel skel-tile"></div>';
+  }
+
   function isAus(fix) {
     return fix.home.name === 'Australia' || fix.away.name === 'Australia';
   }
@@ -219,6 +227,8 @@
     }
   }
 
+  // Show skeleton immediately so sections aren't blank while loading.
+  renderSkeleton();
   refresh();
   setInterval(refresh, POLL_MS);
   setInterval(tickCountdowns, 1000);
