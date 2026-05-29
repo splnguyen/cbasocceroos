@@ -19,6 +19,7 @@
   const DEMO_NOW = isDemo ? new Date('2022-11-05T18:00:00Z').getTime() : null;
 
   const grid     = document.getElementById('grid');
+  const ausTile  = document.getElementById('aus-tile');
   const featured = document.getElementById('featured');
   const badge    = document.getElementById('updatedBadge');
   const cdRoot   = document.getElementById('countdown-cells');
@@ -115,15 +116,18 @@
     featured.querySelectorAll('.featured-flag img').forEach((img) => setFlag(img, img.alt, null));
   }
 
-  function tileHtml(fix) {
+  function tileHtml(fix, extraClass = '') {
     const group = groupLabel(fix);
     const line  = aestKickoffLine(fix.kickoffEpoch);
-    const meta  = `${group} <span class="pipe">|</span> ${line}${venueText(fix)}`;
+    const venue = fix.venue ? fix.venue.toUpperCase() : '';
     const homeCode = teamCode(fix.home.name);
     const awayCode = teamCode(fix.away.name);
     return `
-      <div class="tile-upcoming" data-kickoff="${fix.kickoffEpoch}">
-        <div class="tile-meta">${meta}</div>
+      <div class="tile-upcoming${extraClass ? ' ' + extraClass : ''}" data-kickoff="${fix.kickoffEpoch}">
+        <div class="tile-meta-row">
+          <div class="tile-meta">${group} <span class="pipe">|</span> ${line}</div>
+          ${venue ? `<div class="tile-venue">${venue}</div>` : ''}
+        </div>
         <div class="tile-row">
           <div class="tile-teams">
             <div class="tile-team">
@@ -141,8 +145,14 @@
       </div>`;
   }
 
+  function renderAusTile(fix) {
+    if (!fix) { ausTile.innerHTML = ''; return; }
+    ausTile.innerHTML = tileHtml(fix, 'tile-upcoming--aus');
+    ausTile.querySelectorAll('.tile-flag img').forEach((img) => setFlag(img, img.alt, null));
+  }
+
   function renderTiles(list) {
-    grid.innerHTML = list.map(tileHtml).join('');
+    grid.innerHTML = list.map((f) => tileHtml(f)).join('');
     grid.querySelectorAll('.tile-flag img').forEach((img) => setFlag(img, img.alt, null));
   }
 
@@ -161,8 +171,8 @@
       cdRoot.querySelector('[data-unit="seconds"]').textContent = pad2(s);
     }
 
-    // Tile per-row countdowns
-    grid.querySelectorAll('.tile-countdown').forEach((el) => {
+    // Tile per-row countdowns (AUS tile + coming-up grid)
+    document.querySelectorAll('.tile-countdown').forEach((el) => {
       const k = Number(el.dataset.kickoff);
       el.textContent = shortCountdown(Math.max(0, k - now));
     });
@@ -170,10 +180,15 @@
 
   // ── Fetch ────────────────────────────────────────────────────────────────
 
+  function isAus(fix) {
+    return fix.home.name === 'Australia' || fix.away.name === 'Australia';
+  }
+
   async function refresh() {
     badge.textContent = 'Updating…';
     try {
-      const url = isDemo ? '/api/upcoming-list?demo=1&count=5' : '/api/upcoming-list?count=5';
+      // Fetch enough fixtures to guarantee we find the first AUS match.
+      const url = isDemo ? '/api/upcoming-list?demo=1&count=20' : '/api/upcoming-list?count=20';
       const res = await fetch(url, { cache: 'no-store' });
       const json = await res.json();
       if (!res.ok || !json.ok) throw new Error(json.error || `HTTP ${res.status}`);
@@ -183,11 +198,19 @@
         kickoffEpoch: f.kickoffEpoch || new Date(f.kickoffISO).getTime(),
       }));
 
-      const [first, ...rest] = fixtures;
+      // Tournament opener: hero display + main countdown timer.
+      const [first, second, third] = fixtures;
       kickoffEpoch = first?.kickoffEpoch ?? null;
 
+      // First AUS fixture for the "Next Australia Match" tile.
+      const ausMatch = fixtures.find(isAus);
+
+      // Coming Up: fixtures 2 and 3 from the overall list.
+      const coming = [second, third].filter(Boolean);
+
       renderFeatured(first);
-      renderTiles(rest.slice(0, 4));
+      renderAusTile(ausMatch);
+      renderTiles(coming);
       tickCountdowns();
       badge.textContent = 'Just updated';
     } catch (err) {

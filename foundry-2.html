@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1080">
+<title>Foundry 2 — Carousel</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 1080px; height: 1920px; overflow: hidden; background: #000; }
+#screen-frame {
+  position: absolute;
+  inset: 0;
+  width: 1080px;
+  height: 1920px;
+  border: none;
+}
+</style>
+</head>
+<body>
+<iframe id="screen-frame" src="screen-tournament-countdown.html" title="Foundry 2 screen"></iframe>
+
+<script>
+// ── Foundry 2 carousel ────────────────────────────────────────────────────
+const playlist = [
+  { src: 'screen-tournament-countdown.html', label: 'Tournament Coming Up' },
+];
+
+const SLIDE_DURATION_MS = 45000;
+
+let index = 0;
+const frame = document.getElementById('screen-frame');
+
+function advance() {
+  index = (index + 1) % playlist.length;
+  frame.src = playlist[index].src;
+}
+
+if (playlist.length > 1) {
+  setInterval(advance, SLIDE_DURATION_MS);
+}
+</script>
+</body>
+</html>

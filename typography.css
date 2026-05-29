@@ -62,18 +62,18 @@
   --type-h4-spacing:  0;
   --type-h4-transform: none;
 
-  /* H5 — 30px / 700 / tracking 0.05em */
+  /* H5 — 30px / 700 / tracking 0.08em */
   --type-h5-size:     30px;
   --type-h5-weight:   700;
   --type-h5-lh:       1.2;
-  --type-h5-spacing:  0.05em;
+  --type-h5-spacing:  0.08em;
   --type-h5-transform: none;
 
-  /* H5 All Caps — 30px / 700 / tracking 0.05em / uppercase */
+  /* H5 All Caps — 30px / 700 / tracking 0.08em / uppercase */
   --type-h5-caps-size:     30px;
   --type-h5-caps-weight:   700;
   --type-h5-caps-lh:       1.2;
-  --type-h5-caps-spacing:  0.05em;
+  --type-h5-caps-spacing:  0.08em;
   --type-h5-caps-transform: uppercase;
 
   /* H6 — 24px / 700 / tracking 0.05em */
