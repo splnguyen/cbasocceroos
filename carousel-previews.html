@@ -115,15 +115,20 @@ html, body { height: 100%; overflow: hidden; background: #111; font-family: syst
 
 .portrait-frame {
   position: relative;
-  width: 1080px; height: 1920px;
+  /* Maintain 9:16 at 90vh, matching preview.html */
+  height: 90vh;
+  width: calc(90vh * 0.5625);
   flex-shrink: 0;
-  /* sidebar is 280px wide, so preview is (100vw − 280px) wide */
-  transform-origin: top center;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.06);
+  border-radius: 4px;
+  overflow: hidden;
+  background: #2a2a2a;
 }
 .portrait-frame iframe {
   width: 1080px; height: 1920px;
   border: none; display: block;
   transform-origin: top left;
+  /* Scale set via JS */
 }
 
 /* Loading overlay */
@@ -227,19 +232,14 @@ html, body { height: 100%; overflow: hidden; background: #111; font-family: syst
 </div>
 
 <script>
-// ── Scale iframe to fit portrait frame ──────────────────────────────────────
+// ── Scale iframe to fit portrait frame (matches preview.html) ───────────────
 function scaleFrame() {
   const frame  = document.getElementById('portrait-frame');
   const iframe = frame.querySelector('iframe');
-  const pane   = document.querySelector('.preview-pane');
-  const availH = pane.clientHeight - 40;  // 20px top + bottom breathing room
-  const availW = pane.clientWidth  - 40;
-  const scale  = Math.min(availW / 1080, availH / 1920);
-  frame.style.transform = `scale(${scale}) translateX(-50%)`;
-  frame.style.left = '50%';
-  frame.style.position = 'absolute';
-  frame.style.top = `${(availH - 1920 * scale) / 2 + 20}px`;
-  iframe.style.transform = `scale(1)`;  // iframe is already 1080×1920; parent scales it
+  const scaleX = frame.offsetWidth  / 1080;
+  const scaleY = frame.offsetHeight / 1920;
+  const scale  = Math.min(scaleX, scaleY);
+  iframe.style.transform = `scale(${scale})`;
 }
 
 window.addEventListener('resize', scaleFrame);
