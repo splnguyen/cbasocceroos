@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="tokens.css">
+<title>Socceroos — Carousel Preview</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; background: #111; font-family: system-ui, -apple-system, sans-serif; }
+
+/* ── Layout ── */
+.layout { display: flex; height: 100vh; }
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 280px; flex-shrink: 0;
+  background: #181818;
+  border-right: 1px solid #2a2a2a;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.sidebar-header {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid #2a2a2a;
+  flex-shrink: 0;
+}
+.sidebar-logo {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+}
+.sidebar-logo-icon {
+  width: 32px; height: 32px;
+  background: var(--color-brand-yellow);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+}
+.sidebar-logo-text {
+  font-size: 14px; font-weight: 700;
+  color: #fff; letter-spacing: 0.5px;
+}
+.sidebar-logo-sub {
+  font-size: 11px; color: #666; letter-spacing: 0.3px;
+}
+.sidebar-title {
+  font-size: 11px; font-weight: 600;
+  color: #555; letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* ── Carousel list ── */
+.screen-list {
+  flex: 1; overflow-y: auto; padding: 12px 0;
+}
+.screen-list::-webkit-scrollbar { width: 4px; }
+.screen-list::-webkit-scrollbar-track { background: transparent; }
+.screen-list::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+.list-section-label {
+  padding: 14px 20px 6px;
+  font-size: 10px; font-weight: 700;
+  color: #444; letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
+.list-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 20px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  user-select: none;
+  transition: background 0.1s;
+}
+.list-item:hover { background: #222; }
+.list-item.active {
+  background: #212121;
+  border-left-color: var(--color-brand-yellow);
+}
+.list-item-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%; background: #3a3a3a; flex-shrink: 0;
+}
+.list-item.active .list-item-dot { background: var(--color-brand-yellow); }
+.list-item-label {
+  font-size: 13px; color: #888; flex: 1;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.list-item.active .list-item-label { color: #fff; }
+.list-item-tag {
+  margin-left: auto;
+  font-size: 9px; font-weight: 700;
+  color: #555; letter-spacing: 0.8px;
+  text-transform: uppercase;
+  background: #252525; padding: 2px 6px; border-radius: 3px;
+  flex-shrink: 0;
+}
+.list-item.active .list-item-tag { color: var(--color-brand-yellow); background: #2a2600; }
+
+.list-item.disabled { opacity: 0.3; cursor: default; }
+
+.sidebar-footer {
+  padding: 14px 20px;
+  border-top: 1px solid #222;
+  font-size: 11px; color: #444;
+  flex-shrink: 0;
+}
+
+/* ── Preview pane ── */
+.preview-pane {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  overflow: hidden; position: relative;
+  background: #0d0d0d;
+}
+
+.portrait-frame {
+  position: relative;
+  width: 1080px; height: 1920px;
+  flex-shrink: 0;
+  /* sidebar is 280px wide, so preview is (100vw − 280px) wide */
+  transform-origin: top center;
+}
+.portrait-frame iframe {
+  width: 1080px; height: 1920px;
+  border: none; display: block;
+  transform-origin: top left;
+}
+
+/* Loading overlay */
+.loading-overlay {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.15s;
+}
+.loading-overlay.show { opacity: 1; pointer-events: all; }
+.loading-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--color-brand-yellow);
+  animation: loadPulse 0.8s ease-in-out infinite alternate;
+}
+@keyframes loadPulse {
+  from { opacity: 0.3; transform: scale(0.8); }
+  to   { opacity: 1;   transform: scale(1.2); }
+}
+
+/* Screen label below frame */
+.frame-label {
+  position: absolute; bottom: 16px;
+  left: 50%; transform: translateX(-50%);
+  font-size: 11px; color: #444; letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ── Sidebar ── -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-icon">⚽</div>
+        <div>
+          <div class="sidebar-logo-text">Socceroos</div>
+          <div class="sidebar-logo-sub">Carousel Preview</div>
+        </div>
+      </div>
+      <div class="sidebar-title">Locations</div>
+    </div>
+
+    <div class="screen-list" id="screen-list">
+
+      <div class="list-section-label">Foundry</div>
+
+      <div class="list-item" data-src="foundry-1.html" data-label="Foundry 1 — Group Status 1">
+        <div class="list-item-dot"></div>
+        <div class="list-item-label">Foundry 1</div>
+        <div class="list-item-tag">GRP 1</div>
+      </div>
+
+      <div class="list-item" data-src="foundry-2.html" data-label="Foundry 2 — Tournament Coming Up">
+        <div class="list-item-dot"></div>
+        <div class="list-item-label">Foundry 2</div>
+        <div class="list-item-tag">TOURN</div>
+      </div>
+
+      <div class="list-item" data-src="foundry-3.html" data-label="Foundry 3 — Group Status 2">
+        <div class="list-item-dot"></div>
+        <div class="list-item-label">Foundry 3</div>
+        <div class="list-item-tag">GRP 2</div>
+      </div>
+
+      <div class="list-section-label">Main Office</div>
+
+      <div class="list-item disabled" data-disabled="true">
+        <div class="list-item-dot"></div>
+        <div class="list-item-label">Main Office 1</div>
+        <div class="list-item-tag">SOON</div>
+      </div>
+
+      <div class="list-item disabled" data-disabled="true">
+        <div class="list-item-dot"></div>
+        <div class="list-item-label">Main Office 2</div>
+        <div class="list-item-tag">SOON</div>
+      </div>
+
+    </div>
+
+    <div class="sidebar-footer">
+      Carousel files — 1080 × 1920 px portrait
+    </div>
+  </div>
+
+  <!-- ── Preview pane ── -->
+  <div class="preview-pane">
+    <div class="portrait-frame" id="portrait-frame">
+      <iframe id="preview-frame" src="foundry-1.html" title="Carousel preview"></iframe>
+      <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-dot"></div>
+      </div>
+    </div>
+    <div class="frame-label" id="frame-label">Foundry 1 — Group Status 1</div>
+  </div>
+
+</div>
+
+<script>
+// ── Scale iframe to fit portrait frame ──────────────────────────────────────
+function scaleFrame() {
+  const frame  = document.getElementById('portrait-frame');
+  const iframe = frame.querySelector('iframe');
+  const pane   = document.querySelector('.preview-pane');
+  const availH = pane.clientHeight - 40;  // 20px top + bottom breathing room
+  const availW = pane.clientWidth  - 40;
+  const scale  = Math.min(availW / 1080, availH / 1920);
+  frame.style.transform = `scale(${scale}) translateX(-50%)`;
+  frame.style.left = '50%';
+  frame.style.position = 'absolute';
+  frame.style.top = `${(availH - 1920 * scale) / 2 + 20}px`;
+  iframe.style.transform = `scale(1)`;  // iframe is already 1080×1920; parent scales it
+}
+
+window.addEventListener('resize', scaleFrame);
+
+const loadingOverlay = document.getElementById('loading-overlay');
+const frameLabel     = document.getElementById('frame-label');
+const previewFrame   = document.getElementById('preview-frame');
+
+function goTo(src, label) {
+  loadingOverlay.classList.add('show');
+  previewFrame.src = src;
+  frameLabel.textContent = label;
+  previewFrame.onload = () => loadingOverlay.classList.remove('show');
+}
+
+const items = document.querySelectorAll('.list-item:not([data-disabled])');
+items.forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.list-item').forEach(i => i.classList.remove('active'));
+    item.classList.add('active');
+    goTo(item.dataset.src, item.dataset.label);
+  });
+});
+
+// Activate first item on load.
+items[0]?.classList.add('active');
+previewFrame.addEventListener('load', scaleFrame);
+scaleFrame();
+</script>
+</body>
+</html>
