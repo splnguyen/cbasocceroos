@@ -34,7 +34,7 @@
   function aestParts(ms) {
     const fmt = new Intl.DateTimeFormat('en-AU', {
       timeZone: AEST,
-      weekday: 'long', day: 'numeric', month: 'long',
+      weekday: 'short', day: 'numeric', month: 'short',
       hour: 'numeric', minute: '2-digit', hour12: true,
     });
     const parts = fmt.formatToParts(new Date(ms));
@@ -49,10 +49,10 @@
     };
   }
 
-  // → "TUESDAY 16 JUNE 5:00AM AEST"
+  // → "TUE 16 JUN 5:00AM"
   function aestKickoffLine(ms) {
     const p = aestParts(ms);
-    return `${p.weekday.toUpperCase()} ${p.day} ${p.month.toUpperCase()} ${p.hour}:${p.minute}${p.period} AEST`;
+    return `${p.weekday.toUpperCase()} ${p.day} ${p.month.toUpperCase()} ${p.hour}:${p.minute}${p.period}`;
   }
 
   function nowMs() {

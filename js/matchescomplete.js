@@ -40,11 +40,11 @@
   function aestKickoffLine(ms) {
     const fmt = new Intl.DateTimeFormat('en-AU', {
       timeZone: 'Australia/Sydney',
-      weekday: 'long', day: 'numeric', month: 'long',
+      weekday: 'short', day: 'numeric', month: 'short',
       hour: 'numeric', minute: '2-digit', hour12: true,
     });
     const p = Object.fromEntries(fmt.formatToParts(new Date(ms)).map((x) => [x.type, x.value]));
-    return `${(p.weekday || '').toUpperCase()} ${p.day} ${(p.month || '').toUpperCase()} ${p.hour}:${p.minute}${(p.dayPeriod || '').toUpperCase().replace(/\./g, '')} AEST`;
+    return `${(p.weekday || '').toUpperCase()} ${p.day} ${(p.month || '').toUpperCase()} ${p.hour}:${p.minute}${(p.dayPeriod || '').toUpperCase().replace(/\./g, '')}`;
   }
 
   function renderResults(matches) {
