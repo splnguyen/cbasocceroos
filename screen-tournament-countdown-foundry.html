@@ -18,7 +18,7 @@ html,body{
   color:var(--white);
 }
 .screen{
-  width:1080px;height:1920px;padding:60px;
+  width:1080px;height:1920px;padding:160px 60px 60px;
   display:flex;flex-direction:column;gap:36px;
   overflow:hidden;
 }
@@ -108,21 +108,21 @@ html,body{
 }
 
 /* ── Upcoming matches list ── */
-.grid{display:flex;flex-direction:column;gap:18px;flex-shrink:0;}
+.grid{display:flex;flex-direction:column;gap:20px;flex-shrink:0;}
 .tile-upcoming{
   background:var(--charcoal);border-radius:10px;
-  padding:30px 30px 28px 40px;
-  display:flex;flex-direction:column;gap:20px;
+  padding:20px 20px 15px;
+  display:flex;flex-direction:column;gap:15px;
 }
 .tile-upcoming--aus{background:var(--dark-grey);}
 .tile-meta-row{display:flex;align-items:baseline;justify-content:space-between;gap:16px;}
 .tile-meta{
-  font-size:24px;font-weight:800;letter-spacing:1.2px;
+  font-size:18px;font-weight:800;letter-spacing:1.2px;
   color:var(--white);text-transform:uppercase;
 }
 .tile-meta .pipe{color:var(--brand-yellow);padding:0 2px;}
 .tile-venue{
-  font-size:24px;font-weight:400;letter-spacing:0.5px;
+  font-size:18px;font-weight:400;letter-spacing:0.5px;
   color:var(--white);text-transform:uppercase;white-space:nowrap;flex-shrink:0;
 }
 .tile-row{
