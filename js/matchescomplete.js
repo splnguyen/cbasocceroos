@@ -38,13 +38,15 @@
   }
 
   function aestKickoffLine(ms) {
+    // Figma shows the long form, e.g. "TUESDAY 16 JUNE 05:00AM AEST".
+    // WC 2026 window (11 Jun–19 Jul) sits entirely in AEST, so the suffix is fixed.
     const fmt = new Intl.DateTimeFormat('en-AU', {
       timeZone: 'Australia/Sydney',
-      weekday: 'short', day: 'numeric', month: 'short',
-      hour: 'numeric', minute: '2-digit', hour12: true,
+      weekday: 'long', day: 'numeric', month: 'long',
+      hour: '2-digit', minute: '2-digit', hour12: true,
     });
     const p = Object.fromEntries(fmt.formatToParts(new Date(ms)).map((x) => [x.type, x.value]));
-    return `${(p.weekday || '').toUpperCase()} ${p.day} ${(p.month || '').toUpperCase()} ${p.hour}:${p.minute}${(p.dayPeriod || '').toUpperCase().replace(/\./g, '')}`;
+    return `${(p.weekday || '').toUpperCase()} ${p.day} ${(p.month || '').toUpperCase()} ${p.hour}:${p.minute}${(p.dayPeriod || '').toUpperCase().replace(/\./g, '')} AEST`;
   }
 
   function renderResults(matches) {
@@ -64,18 +66,26 @@
           <div class="result-row">
             <div class="result-team home ${homeLoser ? 'loser' : ''}">
               <div class="result-score">${m.scoreH ?? '–'}</div>
-              <div class="result-flag"><img alt="${m.home.name}"></div>
-              <div class="result-name">${(m.home.name || '').toUpperCase()}</div>
+              <div class="result-avatar">
+                <div class="result-flag"><img alt="${m.home.name}"></div>
+                <div class="result-name">${(m.home.name || '').toUpperCase()}</div>
+              </div>
             </div>
-            <div class="result-status">FT</div>
+            <div class="result-centre">
+              <div class="vert-seg"></div>
+              <div class="result-ft">FT</div>
+              <div class="vert-seg"></div>
+            </div>
             <div class="result-team away ${awayLoser ? 'loser' : ''}">
               <div class="result-score">${m.scoreA ?? '–'}</div>
-              <div class="result-flag"><img alt="${m.away.name}"></div>
-              <div class="result-name">${(m.away.name || '').toUpperCase()}</div>
+              <div class="result-avatar">
+                <div class="result-flag"><img alt="${m.away.name}"></div>
+                <div class="result-name">${(m.away.name || '').toUpperCase()}</div>
+              </div>
             </div>
           </div>
         </div>`;
-    }).join('');
+    }).join('<div class="div-thick"></div>');
     root.querySelectorAll('.result-flag img').forEach((img) => setFlag(img, img.alt, null));
   }
 

@@ -43,14 +43,15 @@
   const AEST = 'Australia/Sydney';
 
   function aestKickoffLine(ms) {
+    // Figma: "TUESDAY 16 JUNE 5:00AM AEST" — long weekday/month, AEST suffix.
     const fmt = new Intl.DateTimeFormat('en-AU', {
       timeZone: AEST,
-      weekday: 'short', day: 'numeric', month: 'short',
+      weekday: 'long', day: 'numeric', month: 'long',
       hour: 'numeric', minute: '2-digit', hour12: true,
     });
     const p = Object.fromEntries(fmt.formatToParts(new Date(ms)).map((x) => [x.type, x.value]));
     const period = (p.dayPeriod || '').toUpperCase().replace(/\./g, '');
-    return `${(p.weekday || '').toUpperCase()} ${p.day} ${(p.month || '').toUpperCase()} ${p.hour}:${p.minute}${period}`;
+    return `${(p.weekday || '').toUpperCase()} ${p.day} ${(p.month || '').toUpperCase()} ${p.hour}:${p.minute}${period} AEST`;
   }
 
   function pad2(n) { return String(Math.max(0, n)).padStart(2, '0'); }

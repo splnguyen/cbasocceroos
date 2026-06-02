@@ -19,13 +19,13 @@ html,body{
 }
 .screen{
   width:1080px;height:1920px;padding:60px;
-  display:flex;flex-direction:column;gap:50px;
+  display:flex;flex-direction:column;
   overflow:hidden;
   align-items:center;
 }
 
 /* ── Header ── */
-.header-block{display:flex;flex-direction:column;gap:40px;flex-shrink:0;width:100%;}
+.header-block{display:flex;flex-direction:column;gap:60px;flex-shrink:0;width:100%;}
 .top-row{display:flex;align-items:flex-start;justify-content:space-between;width:100%;}
 .page-title{
   font-size:64px;font-weight:800;line-height:68px;letter-spacing:3.2px;
@@ -44,81 +44,84 @@ html,body{
   color:var(--white);
 }
 
-/* ── Live-in countdown block ── */
+/* ── Live-in countdown block ── (Figma 79px rhythm, tight cap-trim leading) */
 .cd-block{
-  display:flex;flex-direction:column;gap:18px;align-items:center;flex-shrink:0;width:100%;
+  display:flex;flex-direction:column;gap:40px;align-items:center;flex-shrink:0;width:100%;
+  margin-top:79px;
 }
 .cd-label{
-  font-size:32px;font-weight:700;letter-spacing:3.2px;
+  font-size:32px;font-weight:700;line-height:0.7;letter-spacing:3.2px;
   color:var(--brand-yellow);text-align:center;text-transform:uppercase;
 }
 .cd-clock{
-  font-size:120px;font-weight:800;line-height:1;letter-spacing:6px;
+  font-size:120px;font-weight:800;line-height:0.7;letter-spacing:6px;
   color:var(--brand-yellow);text-align:center;
   font-variant-numeric:tabular-nums;
 }
 .cd-kickoff{
-  font-size:32px;font-weight:800;letter-spacing:3.2px;
+  font-size:32px;font-weight:800;line-height:0.7;letter-spacing:3.2px;
   color:var(--brand-yellow);text-align:center;text-transform:uppercase;
 }
 
 /* ── Main match (big flags + VS) ── */
 .match-block{
-  display:flex;align-items:center;justify-content:space-between;
-  gap:24px;flex-shrink:0;width:100%;
+  display:flex;align-items:flex-start;justify-content:center;
+  gap:71px;flex-shrink:0;width:100%;margin-top:79px;
 }
 .team-col{
-  flex:1;display:flex;flex-direction:column;align-items:center;gap:24px;
-  min-width:0;
+  width:367px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:30px;
 }
 .team-flag{
-  width:240px;height:240px;border-radius:50%;overflow:hidden;
+  width:367px;height:367px;border-radius:50%;overflow:hidden;
   background:#444;flex-shrink:0;
 }
 .team-flag img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
 .team-name{
-  font-size:42px;font-weight:800;line-height:1;letter-spacing:2px;
+  font-size:48px;font-weight:800;line-height:0.7;letter-spacing:2.4px;
   color:var(--white);text-transform:uppercase;text-align:center;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
+  white-space:nowrap;
 }
 .vs-big{
-  font-size:48px;font-weight:700;letter-spacing:5px;
+  font-size:48px;font-weight:400;letter-spacing:5.28px;
   color:var(--white);text-transform:uppercase;
-  flex-shrink:0;width:80px;text-align:center;
+  flex-shrink:0;width:84.5px;text-align:center;align-self:center;
 }
 
 /* ── Winner-plays block (knockout variant only) ── */
+.div-thick + .winner-plays-block{margin-top:79px;}
+.screen > .div-thick{margin-top:79px;}
 .winner-plays-block{
-  display:flex;flex-direction:column;align-items:center;gap:30px;
+  display:flex;flex-direction:column;align-items:center;gap:79px;
   width:100%;flex-shrink:0;
 }
 .winner-plays-heading{
-  font-size:30px;font-weight:800;letter-spacing:3px;
+  font-size:32px;font-weight:800;line-height:0.7;letter-spacing:3.2px;
   color:var(--white);text-align:center;text-transform:uppercase;
 }
 .winner-plays-row{
-  display:flex;align-items:center;justify-content:center;gap:30px;
+  display:flex;align-items:center;justify-content:center;gap:24px;
   width:100%;
 }
+.winner-plays-row[hidden]{display:none;}
 .mini-team{
-  display:flex;flex-direction:column;align-items:center;gap:18px;
+  display:flex;flex-direction:column;align-items:center;gap:30px;
 }
 .mini-flag{
-  width:120px;height:120px;border-radius:50%;overflow:hidden;
+  width:150px;height:150px;border-radius:50%;overflow:hidden;
   background:#444;flex-shrink:0;
 }
 .mini-flag img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
 .mini-name{
-  font-size:36px;font-weight:800;line-height:1;letter-spacing:0;
+  font-size:42px;font-weight:800;line-height:0.7;letter-spacing:0;
   color:var(--white);text-transform:uppercase;text-align:center;white-space:nowrap;
 }
 .mini-vs{
-  font-size:36px;font-weight:400;letter-spacing:4px;
+  font-size:48px;font-weight:400;letter-spacing:5.28px;
   color:var(--white);text-transform:uppercase;
-  flex-shrink:0;width:60px;text-align:center;
+  flex-shrink:0;width:84.5px;text-align:center;align-self:center;
 }
 .winner-plays-date{
-  font-size:30px;font-weight:800;letter-spacing:3px;
+  font-size:32px;font-weight:800;line-height:0.7;letter-spacing:3.2px;
   color:var(--white);text-align:center;text-transform:uppercase;
   width:100%;
 }

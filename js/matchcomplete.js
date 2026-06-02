@@ -45,6 +45,8 @@
     $('name-away').textContent = (state.away.name || '').toUpperCase();
     setFlag($('flag-home'), state.home.name, state.home.logo);
     setFlag($('flag-away'), state.away.name, state.away.logo);
+    setFlag($('poss-flag-home'), state.home.name, state.home.logo);
+    setFlag($('poss-flag-away'), state.away.name, state.away.logo);
 
     document.querySelector('.team-col.home').classList.toggle('loser', homeLoser);
     document.querySelector('.team-col.away').classList.toggle('loser', awayLoser);
@@ -57,11 +59,17 @@
     $('poss-away').textContent = `${possA}%`;
     $('poss-bar-home').style.width = `${possH}%`;
 
+    // Card order matches the Figma 4×2 grid: shots/target, fouls/corners,
+    // passes/pass-accuracy, saves/offsides.
     const statRows = [
       ['shots', state.shots],
       ['target', state.target],
-      ['corners', state.corners],
       ['fouls', state.fouls],
+      ['corners', state.corners],
+      ['passes', state.passes],
+      ['passacc', state.passAcc],
+      ['saves', state.saves],
+      ['offsides', state.offsides],
     ];
     for (const [id, pair] of statRows) {
       $(`s-${id}-h`).textContent = pair?.[0] ?? '–';
