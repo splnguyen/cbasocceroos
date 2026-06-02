@@ -10,6 +10,7 @@ const { URL } = require('url');
 const { loadEnvFiles } = require('./lib/load-env');
 const { fetchMatch, fetchUpcoming, fetchUpcomingList, getApiFootballKey } = require('./lib/match-service');
 const { fetchStandings } = require('./lib/standings-service');
+const { fetchTopScorers } = require('./lib/topscorers-service');
 
 loadEnvFiles();
 
@@ -98,6 +99,26 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 500, { ok: false, error: err.message });
       }
       console.error('[api/standings]', err);
+      return sendJson(res, 502, { ok: false, error: err.message });
+    }
+  }
+
+  if (req.url?.startsWith('/api/topscorers')) {
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204);
+      return res.end();
+    }
+    if (req.method !== 'GET') {
+      return sendJson(res, 405, { error: 'Method not allowed' });
+    }
+    try {
+      const data = await fetchTopScorers(parseQuery(req.url));
+      return sendJson(res, 200, data);
+    } catch (err) {
+      if (err.code === 'MISSING_API_KEY') {
+        return sendJson(res, 500, { ok: false, error: err.message });
+      }
+      console.error('[api/topscorers]', err);
       return sendJson(res, 502, { ok: false, error: err.message });
     }
   }

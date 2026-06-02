@@ -90,7 +90,7 @@ html,body{
   display:flex;flex-direction:column;align-items:center;justify-content:space-between;
 }
 .vert-seg{
-  width:20px;height:165px;
+  width:20px;height:165px;border-radius:10px;
   background:var(--dark-grey);flex-shrink:0;
 }
 .clock-block{display:flex;flex-direction:column;align-items:center;gap:20px;}
@@ -104,7 +104,7 @@ html,body{
 }
 
 /* ── Rolling match feed wrapper (poss + stats + feed) ── */
-.rolling-feed{display:flex;flex-direction:column;gap:30px;flex-shrink:0;}
+.rolling-feed{display:flex;flex-direction:column;gap:60px;flex-shrink:0;}
 
 /* ── Possession bar (large = single, small = pair) ── */
 .poss-wrap{display:flex;flex-direction:column;gap:20px;flex-shrink:0;}
@@ -167,15 +167,15 @@ html,body{
 }
 .feed-item.last{border-bottom:none;padding-bottom:0;}
 .feed-top{
-  display:flex;align-items:center;
-  font-size:30px;font-weight:800;letter-spacing:1.5px;
+  display:flex;align-items:center;line-height:0.7;  /* cap-trim: flex box won't honour text-box-trim */
+  font-size:30px;font-weight:800;letter-spacing:2.4px;
   color:var(--brand-yellow);
 }
-.feed-min{width:110px;flex-shrink:0;white-space:nowrap;}      /* Figma w-220 ÷2 */
+.feed-min{width:130px;flex-shrink:0;white-space:nowrap;}      /* Figma w-260 ÷2 */
 .feed-type{flex:1;min-width:0;white-space:nowrap;}
-.feed-player{width:216px;flex-shrink:0;text-align:right;white-space:nowrap;}  /* Figma w-432 ÷2 */
+.feed-player{flex-shrink:0;text-align:right;white-space:nowrap;}  /* right-aligned, sizes to name */
 .feed-desc{
-  padding-left:110px;white-space:nowrap;
+  padding-left:130px;white-space:nowrap;line-height:0.7;  /* cap-trim, robust without text-box-trim */
   font-size:24px;font-weight:700;letter-spacing:1.2px;
   color:var(--white);
 }
