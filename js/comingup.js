@@ -33,6 +33,8 @@
   const standingsRoot = document.getElementById('standings-rows');
 
   let kickoffEpoch = null;
+  let hasData = false;
+  const CACHE_KEY = `cba:comingup:v1:demo=${isDemo ? 1 : 0}`;
 
   // ── Time helpers ─────────────────────────────────────────────────────────
   const AEST = 'Australia/Sydney';
@@ -107,6 +109,42 @@
     cdKickoff.textContent = aestKickoffLine(fix.kickoffEpoch);
   }
 
+  // ── Apply (from fetch or cache) ──────────────────────────────────────────
+  function applyPayload(json, badgeText = 'Just updated') {
+    const fix = json.fixture;
+    kickoffEpoch = new Date(fix.kickoffISO).getTime();
+    if (isDemo) {
+      // For 2022: pin "now" to (kickoff - 15 days) so countdown reads sensibly.
+      demoNowMs = kickoffEpoch - DEMO_OFFSET_DAYS * 86400_000;
+    }
+    renderFixture(fix);
+    renderStandings(json.standings || [], fix.group || 'GROUP');
+    tick();
+    updatedBadge.textContent = badgeText;
+    hasData = true;
+  }
+
+  // ── Cache (localStorage; renders instantly on carousel revisits) ───────────
+  function readCache() {
+    try {
+      const raw = localStorage.getItem(CACHE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || !parsed.payload || !parsed.ts) return null;
+      return parsed;
+    } catch (e) { return null; }
+  }
+  function writeCache(payload) {
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify({ payload, ts: Date.now() })); }
+    catch (e) { /* best-effort */ }
+  }
+  function cacheBadge(ts) {
+    const mins = Math.floor((Date.now() - ts) / 60000);
+    if (mins <= 0) return 'Just updated';
+    if (mins === 1) return 'Updated 1 min ago';
+    return `Updated ${mins} mins ago`;
+  }
+
   // ── Fetch ────────────────────────────────────────────────────────────────
   async function refresh() {
     updatedBadge.textContent = 'Updating…';
@@ -120,25 +158,22 @@
       const json = await res.json();
       if (!res.ok || !json.ok) throw new Error(json.error || `HTTP ${res.status}`);
 
-      const fix = json.fixture;
-      kickoffEpoch = new Date(fix.kickoffISO).getTime();
-
-      if (isDemo) {
-        // For 2022: pin "now" to (kickoff - 15 days) so countdown reads sensibly.
-        demoNowMs = kickoffEpoch - DEMO_OFFSET_DAYS * 86400_000;
-      }
-
-      renderFixture(fix);
-      renderStandings(json.standings || [], fix.group || 'GROUP');
-      tick();
-      updatedBadge.textContent = 'Just updated';
+      writeCache(json);
+      applyPayload(json); // reload values when the API call returns
     } catch (err) {
       console.error('[comingup]', err);
+      // Keep cached/previous fixture visible; just flag the failure.
       updatedBadge.textContent = 'Update failed';
     }
   }
 
-  refresh();
+  // ── Boot ───────────────────────────────────────────────────────────────────
+  const cached = readCache();
+  // Carousel revisit (fresh cache) → render instantly, no reload flash. Only
+  // hit the network on mount if there's no cache or it's gone stale.
+  if (cached) applyPayload(cached.payload, cacheBadge(cached.ts));
+  const isStale = !cached || (Date.now() - cached.ts) > POLL_MS;
+  if (isStale) refresh();
   setInterval(refresh, POLL_MS);
   setInterval(tick, 1000);
 })();

@@ -15,6 +15,40 @@
 
   // Map team rank → status class (qualified/contention/eliminated).
   const STATUS_RANK = { qualified: 0, contention: 1, eliminated: 2 };
+  let hasData = false;
+  const CACHE_KEY = `cba:matchescomplete:v1:demo=${isDemo ? 1 : 0}`;
+
+  // ── Apply (from fetch or cache) — payload bundles both API responses ───────
+  function applyPayload(payload, badgeText = 'Just updated') {
+    const recentJson = payload.recent || {};
+    const standingsJson = payload.standings || {};
+    const finished = (recentJson.matches || []).filter((m) => m.isFinished).slice(-2).reverse();
+    renderResults(finished);
+    renderStandings(standingsJson.groups || []);
+    $('updatedBadge').textContent = badgeText;
+    hasData = true;
+  }
+
+  // ── Cache (localStorage; renders instantly on carousel revisits) ───────────
+  function readCache() {
+    try {
+      const raw = localStorage.getItem(CACHE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || !parsed.payload || !parsed.ts) return null;
+      return parsed;
+    } catch (e) { return null; }
+  }
+  function writeCache(payload) {
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify({ payload, ts: Date.now() })); }
+    catch (e) { /* best-effort */ }
+  }
+  function cacheBadge(ts) {
+    const mins = Math.floor((Date.now() - ts) / 60000);
+    if (mins <= 0) return 'Just updated';
+    if (mins === 1) return 'Updated 1 min ago';
+    return `Updated ${mins} mins ago`;
+  }
 
   async function refresh() {
     $('updatedBadge').textContent = 'Updating…';
@@ -27,12 +61,12 @@
       const standingsJson = await standingsRes.json();
       if (!recentJson.ok) throw new Error(recentJson.error || 'standings failed');
 
-      const finished = (recentJson.matches || []).filter((m) => m.isFinished).slice(-2).reverse();
-      renderResults(finished);
-      renderStandings(standingsJson.groups || []);
-      $('updatedBadge').textContent = 'Just updated';
+      const payload = { recent: recentJson, standings: standingsJson };
+      writeCache(payload);
+      applyPayload(payload); // reload values when the API call returns
     } catch (err) {
       console.error('[matchescomplete]', err);
+      // Keep cached/previous results visible; just flag the failure.
       $('updatedBadge').textContent = 'Update failed';
     }
   }
@@ -131,6 +165,10 @@
     root.querySelectorAll('.grow-flag img').forEach((img) => setFlag(img, img.alt, null));
   }
 
-  refresh();
+  // ── Boot ───────────────────────────────────────────────────────────────────
+  const cached = readCache();
+  if (cached) applyPayload(cached.payload, cacheBadge(cached.ts));
+  const isStale = !cached || (Date.now() - cached.ts) > POLL_MS;
+  if (isStale) refresh();
   setInterval(refresh, POLL_MS);
 })();

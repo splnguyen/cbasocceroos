@@ -26,6 +26,8 @@
 
   let fixtures = [];        // [{ fixtureId, kickoffEpoch, ... }, ...]
   let kickoffEpoch = null;  // first fixture's kickoff in ms
+  let hasData = false;      // true once real (or cached) fixtures are on screen
+  const CACHE_KEY = `cba:countdown:v1:demo=${isDemo ? 1 : 0}`;
 
   // ── Time helpers ─────────────────────────────────────────────────────────
 
@@ -192,6 +194,62 @@
     return fix.home.name === 'Australia' || fix.away.name === 'Australia';
   }
 
+  // Apply a fetched (or cached) upcoming-list payload to the screen. The
+  // per-second tick keeps the countdowns live regardless of where the
+  // fixtures came from.
+  function applyPayload(json, badgeText = 'Just updated') {
+    fixtures = (json.matches || []).map((f) => ({
+      ...f,
+      kickoffEpoch: f.kickoffEpoch || new Date(f.kickoffISO).getTime(),
+    }));
+
+    // Tournament opener: hero display + main countdown timer.
+    const [first, second, third] = fixtures;
+    kickoffEpoch = first?.kickoffEpoch ?? null;
+
+    // First AUS fixture for the "Next Australia Match" tile.
+    const ausMatch = fixtures.find(isAus);
+
+    // Coming Up: fixtures 2 and 3 from the overall list.
+    const coming = [second, third].filter(Boolean);
+
+    renderFeatured(first);
+    renderAusTile(ausMatch);
+    renderTiles(coming);
+    tickCountdowns();
+    badge.textContent = badgeText;
+    hasData = true;
+  }
+
+  // ── Cache (localStorage; renders instantly on carousel revisits) ───────────
+
+  function readCache() {
+    try {
+      const raw = localStorage.getItem(CACHE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || !parsed.payload || !parsed.ts) return null;
+      return parsed;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function writeCache(payload) {
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify({ payload, ts: Date.now() }));
+    } catch (e) {
+      /* storage unavailable / quota — caching is best-effort */
+    }
+  }
+
+  function cacheBadge(ts) {
+    const mins = Math.floor((Date.now() - ts) / 60000);
+    if (mins <= 0) return 'Just updated';
+    if (mins === 1) return 'Updated 1 min ago';
+    return `Updated ${mins} mins ago`;
+  }
+
   async function refresh() {
     badge.textContent = 'Updating…';
     try {
@@ -201,35 +259,31 @@
       const json = await res.json();
       if (!res.ok || !json.ok) throw new Error(json.error || `HTTP ${res.status}`);
 
-      fixtures = (json.matches || []).map((f) => ({
-        ...f,
-        kickoffEpoch: f.kickoffEpoch || new Date(f.kickoffISO).getTime(),
-      }));
-
-      // Tournament opener: hero display + main countdown timer.
-      const [first, second, third] = fixtures;
-      kickoffEpoch = first?.kickoffEpoch ?? null;
-
-      // First AUS fixture for the "Next Australia Match" tile.
-      const ausMatch = fixtures.find(isAus);
-
-      // Coming Up: fixtures 2 and 3 from the overall list.
-      const coming = [second, third].filter(Boolean);
-
-      renderFeatured(first);
-      renderAusTile(ausMatch);
-      renderTiles(coming);
-      tickCountdowns();
-      badge.textContent = 'Just updated';
+      writeCache(json);
+      applyPayload(json); // reload values when the API call returns
     } catch (err) {
       console.error('[tournament-countdown]', err);
+      // Keep cached/previous fixtures visible on screen; just flag the failure.
       badge.textContent = 'Update failed';
     }
   }
 
-  // Show skeleton immediately so sections aren't blank while loading.
-  renderSkeleton();
-  refresh();
+  // ── Boot ───────────────────────────────────────────────────────────────────
+  const cached = readCache();
+  if (cached) {
+    // Carousel revisit (or warm load) → cached fixtures render immediately, no
+    // skeleton flash. The countdowns tick live from the cached kickoff epochs.
+    applyPayload(cached.payload, cacheBadge(cached.ts));
+  } else {
+    // True cold load → skeleton while the first fetch lands.
+    renderSkeleton();
+  }
+
+  // Only hit the network on mount if there's no cache or it's gone stale —
+  // this stops a fresh reload on every carousel hit. The interval keeps it
+  // current while the screen stays mounted.
+  const isStale = !cached || (Date.now() - cached.ts) > POLL_MS;
+  if (isStale) refresh();
   setInterval(refresh, POLL_MS);
   setInterval(tickCountdowns, 1000);
 })();
