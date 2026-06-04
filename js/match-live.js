@@ -21,13 +21,18 @@
 
 (function () {
   const params = new URLSearchParams(location.search);
+  // Screen-level defaults (e.g. a pinned fixture) may be set via
+  // window.SCREEN_CONFIG before this script loads. URL params override them,
+  // so ?fixture=/?demo=1/etc. still work for ad-hoc testing.
+  const cfg = (typeof window !== 'undefined' && window.SCREEN_CONFIG) || {};
+  const P = (k) => (params.has(k) ? params.get(k) : (cfg[k] != null ? String(cfg[k]) : null));
   const isPair = document.body.dataset.pair === '1';
 
   // Per CLAUDE.md / context/api-football.md: 1 call/min when live, slower otherwise.
   const LIVE_POLL_MS = 60_000;
   const IDLE_POLL_MS = 5 * 60_000;
-  const POLL_OVERRIDE_MS = params.get('poll')
-    ? Math.max(2, Number(params.get('poll'))) * 1000
+  const POLL_OVERRIDE_MS = P('poll')
+    ? Math.max(2, Number(P('poll'))) * 1000
     : null;
 
   const $ = (id) => document.getElementById(id);
@@ -57,7 +62,7 @@
   function primaryQuery() {
     const q = new URLSearchParams();
     for (const k of ['fixture', 'team', 'season', 'league', 'demo']) {
-      const v = params.get(k);
+      const v = P(k);
       if (v != null) q.set(k, v);
     }
     return q.toString();
@@ -65,12 +70,12 @@
 
   function secondaryQuery() {
     const q = new URLSearchParams();
-    if (params.get('demo')) {
+    if (P('demo')) {
       // 2022 3rd-place playoff: Morocco's last 2022 match (team 31, season 2022).
       q.set('demo', '1');
       q.set('team', '31');
-    } else if (params.get('other')) {
-      q.set('fixture', params.get('other'));
+    } else if (P('other')) {
+      q.set('fixture', P('other'));
     } else {
       return null; // no secondary configured
     }
