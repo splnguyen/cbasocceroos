@@ -157,6 +157,38 @@ html, body { height: 100%; overflow: hidden; background: #111; font-family: syst
   font-size: 11px; color: #444; letter-spacing: 0.5px;
   white-space: nowrap;
 }
+
+/* ── Multi-frame row (offices, side-by-side) ── */
+.frame-row {
+  display: flex; gap: 28px;
+  align-items: center; justify-content: center;
+  width: 100%; height: 100%;
+}
+.frame-col { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.frame-caption {
+  font-size: 11px; font-weight: 700; color: #666;
+  letter-spacing: 1px; text-transform: uppercase;
+}
+.frame-status {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: #777; letter-spacing: 0.3px;
+  min-height: 18px; max-width: 360px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.frame-status .st-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #3a3a3a; flex-shrink: 0;
+}
+.frame-status.is-playing .st-dot { background: #46c46a; }
+.frame-status.is-paused  .st-dot { background: #888; }
+.frame-status.is-live    .st-dot { background: #ff4d4d; animation: stPulse 1s ease-in-out infinite alternate; }
+.frame-status .st-state { font-weight: 700; color: #aaa; }
+.frame-status.is-live .st-state { color: #ff6b6b; }
+.frame-status .st-screen { color: #fff; }
+@keyframes stPulse { from { opacity: 0.35; } to { opacity: 1; } }
+
+/* Live tags in the sidebar */
+.list-item-tag.live { color: #ff6b6b; background: #2a0000; }
 </style>
 </head>
 <body>
@@ -199,16 +231,22 @@ html, body { height: 100%; overflow: hidden; background: #111; font-family: syst
 
       <div class="list-section-label">Main Office</div>
 
-      <div class="list-item disabled" data-disabled="true">
+      <div class="list-item" data-view="office-1">
         <div class="list-item-dot"></div>
         <div class="list-item-label">Main Office 1</div>
-        <div class="list-item-tag">SOON</div>
+        <div class="list-item-tag">OFF 1</div>
       </div>
 
-      <div class="list-item disabled" data-disabled="true">
+      <div class="list-item" data-view="office-2">
         <div class="list-item-dot"></div>
         <div class="list-item-label">Main Office 2</div>
-        <div class="list-item-tag">SOON</div>
+        <div class="list-item-tag">OFF 2</div>
+      </div>
+
+      <div class="list-item" data-view="both">
+        <div class="list-item-dot"></div>
+        <div class="list-item-label">Both Offices</div>
+        <div class="list-item-tag">1 + 2</div>
       </div>
 
     </div>
@@ -219,55 +257,140 @@ html, body { height: 100%; overflow: hidden; background: #111; font-family: syst
   </div>
 
   <!-- ── Preview pane ── -->
-  <div class="preview-pane">
-    <div class="portrait-frame" id="portrait-frame">
-      <iframe id="preview-frame" src="foundry-1.html" title="Carousel preview"></iframe>
-      <div class="loading-overlay" id="loading-overlay">
-        <div class="loading-dot"></div>
-      </div>
-    </div>
-    <div class="frame-label" id="frame-label">Foundry 1 — Group Status 1</div>
+  <div class="preview-pane" id="preview-pane">
+    <div class="frame-row" id="frame-row"><!-- frames injected by JS --></div>
   </div>
 
 </div>
 
 <script>
-// ── Scale iframe to fit portrait frame (matches preview.html) ───────────────
-function scaleFrame() {
-  const frame  = document.getElementById('portrait-frame');
-  const iframe = frame.querySelector('iframe');
-  const scaleX = frame.offsetWidth  / 1080;
-  const scaleY = frame.offsetHeight / 1920;
-  const scale  = Math.min(scaleX, scaleY);
-  iframe.style.transform = `scale(${scale})`;
+// ═══════════════════════════════════════════════════════════════
+//  VIEWS — each list item maps to one or more portrait frames.
+//  Office frames load index.html?office=N (the live carousel
+//  controller) with chrome=0 so the dev bar is hidden. live:true
+//  means we read that office's current state (from the hidden
+//  status fields in index.html) and show it under the frame.
+// ═══════════════════════════════════════════════════════════════
+const VIEWS = {
+  'office-1': { label: 'Main Office 1', frames: [
+    { src: 'index.html?office=1&chrome=0', caption: 'Office 1', live: true, office: 1 },
+  ]},
+  'office-2': { label: 'Main Office 2', frames: [
+    { src: 'index.html?office=2&chrome=0', caption: 'Office 2', live: true, office: 2 },
+  ]},
+  'both': { label: 'Both Main Offices', frames: [
+    { src: 'index.html?office=1&chrome=0', caption: 'Office 1', live: true, office: 1 },
+    { src: 'index.html?office=2&chrome=0', caption: 'Office 2', live: true, office: 2 },
+  ]},
+};
+
+// Foundry items have no data-view — fall back to their data-src/label.
+function resolveView(item) {
+  if (item.dataset.view && VIEWS[item.dataset.view]) return VIEWS[item.dataset.view];
+  return { label: item.dataset.label, frames: [{ src: item.dataset.src, caption: item.dataset.label, live: false }] };
 }
 
-window.addEventListener('resize', scaleFrame);
+const frameRow = document.getElementById('frame-row');
+const pane     = document.getElementById('preview-pane');
 
-const loadingOverlay = document.getElementById('loading-overlay');
-const frameLabel     = document.getElementById('frame-label');
-const previewFrame   = document.getElementById('preview-frame');
+// ── Size frames to fit the pane (1 or 2 portrait 9:16 frames) ──────────────
+function layout() {
+  const cols = Array.from(frameRow.querySelectorAll('.frame-col'));
+  if (!cols.length) return;
+  const n = cols.length;
+  const gap = 28, padX = 48, captionSpace = 64;
+  const availW = (pane.clientWidth - padX - gap * (n - 1)) / n;
+  const availH = pane.clientHeight - captionSpace;
+  const h = Math.min(availH, availW / 0.5625, window.innerHeight * 0.9);
+  const w = h * 0.5625;
+  cols.forEach(col => {
+    const frame  = col.querySelector('.portrait-frame');
+    const iframe = col.querySelector('iframe');
+    frame.style.height = h + 'px';
+    frame.style.width  = w + 'px';
+    iframe.style.transform = `scale(${w / 1080})`;
+  });
+}
+window.addEventListener('resize', layout);
 
-function goTo(src, label) {
-  loadingOverlay.classList.add('show');
-  previewFrame.src = src;
-  frameLabel.textContent = label;
-  previewFrame.onload = () => loadingOverlay.classList.remove('show');
+// ── Render the selected view ───────────────────────────────────────────────
+function renderView(view) {
+  frameRow.innerHTML = view.frames.map((f, i) => `
+    <div class="frame-col" data-office="${f.office || ''}" data-live="${f.live ? 1 : 0}">
+      <div class="portrait-frame">
+        <iframe data-idx="${i}" src="${f.src}" title="${f.caption}"></iframe>
+        <div class="loading-overlay show"><div class="loading-dot"></div></div>
+      </div>
+      <div class="frame-caption">${f.caption}</div>
+      <div class="frame-status"><span class="st-dot"></span><span class="st-text">${f.live ? 'connecting…' : ''}</span></div>
+    </div>`).join('');
+
+  frameRow.querySelectorAll('.frame-col').forEach(col => {
+    const iframe  = col.querySelector('iframe');
+    const overlay = col.querySelector('.loading-overlay');
+    iframe.addEventListener('load', () => { overlay.classList.remove('show'); layout(); });
+  });
+  layout();
+  updateAllStatus();
 }
 
+// ── Live status: read each office iframe's hidden status fields ────────────
+function readOfficeStatus(iframe) {
+  try {
+    const doc = iframe.contentDocument;
+    if (!doc) return null;
+    const get = (id) => doc.getElementById(id)?.textContent?.trim() || '';
+    const carousel = get('st-carousel');
+    if (!carousel) return null; // not booted yet
+    return { carousel, screen: get('st-screen'), mode: get('st-mode') };
+  } catch (e) {
+    return null; // cross-origin / not ready
+  }
+}
+
+function setSidebarTag(office, text, isLive) {
+  if (!office) return;
+  const tag = document.querySelector(`.list-item[data-view="office-${office}"] .list-item-tag`);
+  if (!tag) return;
+  tag.textContent = text;
+  tag.classList.toggle('live', !!isLive);
+}
+
+function updateAllStatus() {
+  frameRow.querySelectorAll('.frame-col').forEach(col => {
+    const statusEl = col.querySelector('.frame-status');
+    if (col.dataset.live !== '1') { statusEl.style.display = 'none'; return; }
+    statusEl.style.display = '';
+    const textEl = statusEl.querySelector('.st-text');
+    const office = col.dataset.office;
+    const s = readOfficeStatus(col.querySelector('iframe'));
+
+    statusEl.classList.remove('is-live', 'is-playing', 'is-paused');
+    if (!s) { textEl.textContent = 'connecting…'; return; }
+
+    const isLive = s.carousel.startsWith('live');
+    const isPair = s.carousel.includes('pair');
+    statusEl.classList.add(isLive ? 'is-live' : (s.carousel === 'playing' ? 'is-playing' : 'is-paused'));
+    const state = isLive ? (isPair ? 'DUAL LIVE' : 'LIVE') : s.carousel.toUpperCase();
+    textEl.innerHTML = `<span class="st-state">${state}</span> · <span class="st-screen">${s.screen}</span>`;
+    setSidebarTag(office, isLive ? (isPair ? 'PAIR' : 'LIVE') : 'PLAY', isLive);
+  });
+}
+setInterval(updateAllStatus, 2000);
+
+// ── Sidebar selection ──────────────────────────────────────────────────────
 const items = document.querySelectorAll('.list-item:not([data-disabled])');
 items.forEach(item => {
   item.addEventListener('click', () => {
     document.querySelectorAll('.list-item').forEach(i => i.classList.remove('active'));
     item.classList.add('active');
-    goTo(item.dataset.src, item.dataset.label);
+    renderView(resolveView(item));
   });
 });
 
-// Activate first item on load.
+// Activate first item (Foundry 1) on load.
 items[0]?.classList.add('active');
-previewFrame.addEventListener('load', scaleFrame);
-scaleFrame();
+renderView(resolveView(items[0]));
 </script>
 </body>
 </html>

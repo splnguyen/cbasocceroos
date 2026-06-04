@@ -603,6 +603,15 @@ async function checkLive() {
 // ═══════════════════════════════════════════════════════════════
 //  BOOT — resolve live state, then auto-run (carousel or live screen)
 // ═══════════════════════════════════════════════════════════════
+// ?chrome=0 hides the dev control bar (used when embedded as a clean
+// preview, e.g. the carousel-previews monitor). The hidden status fields
+// (#st-screen/#st-carousel/#st-mode) are still updated, so a same-origin
+// parent can read each office's current state.
+if (CONFIG.get('chrome') === '0') {
+  const db = document.getElementById('dev-bar');
+  if (db) db.style.display = 'none';
+}
+
 updateStatus();
 checkLive();
 </script>
