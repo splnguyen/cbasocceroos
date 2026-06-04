@@ -164,6 +164,11 @@ html, body {
         <option value="group-status-1">Group Stage A–F</option>
         <option value="group-status-2">Group Stage G–L</option>
       </optgroup>
+      <optgroup label="Overview">
+        <option value="tournament-countdown">Tournament Countdown</option>
+        <option value="tournament-draw">Tournament Draw</option>
+        <option value="top-scorers">Top Scorers</option>
+      </optgroup>
       <optgroup label="Knockout">
         <option value="round-of-32">Round of 32</option>
       </optgroup>
@@ -207,6 +212,10 @@ const SCREENS = [
   // ── Live ─────────────────────────────────────────────────────
   { id: 'match-live',          label: 'Match Live',                src: 'screen-matchlive.html',          urlParam: null },
   { id: 'match-live-pair',     label: 'Match Live — Pair',         src: 'screen-matchlivepair.html',      urlParam: null },
+  // ── Pre-tournament / overview ─────────────────────────────────
+  { id: 'tournament-countdown',label: 'Tournament Countdown',      src: 'screen-tournament-countdown.html', urlParam: null },
+  { id: 'tournament-draw',     label: 'Tournament Draw',           src: 'screen-tournament-draw.html',    urlParam: null },
+  { id: 'top-scorers',         label: 'Top Scorers',               src: 'screen-topscorers.html',         urlParam: null },
   // ── Upcoming — Group Stage ────────────────────────────────────
   { id: 'comingup-single',     label: 'Coming Up — Single',        src: 'screen-comingup.html',           urlParam: null },
   { id: 'comingup-two',        label: 'Coming Up — Two Matches',   src: 'screen-comingup-two.html',       urlParam: null },
@@ -227,83 +236,92 @@ const SCREENS = [
   { id: 'goal-overlay',        label: 'Goal Scored',               src: 'screen-goal.html',               urlParam: null },
 ];
 
-// ── Carousel config ───────────────────────────────────────────
-// Each stage lists screen ids in display order.
-// 'match-live' and 'match-live-pair' are injected dynamically
-// when a live match is detected (see liveCheckLoop below).
-// 'goal-overlay' is never in a carousel — triggered by postMessage.
-const STAGE_CAROUSELS = {
-  'group-stage': [
-    'comingup-single',
-    'comingup-two',
-    'match-complete',
-    'matches-complete',
+// ── Runtime config (from URL) ─────────────────────────────────
+//   ?office=1|2     which physical office display this is (default 1).
+//                   When two matches are live, Office 1 and Office 2 show
+//                   the SAME dual-live screen but with primary/secondary
+//                   swapped, so neither display has to cycle between the
+//                   two live games.
+//   ?demo=1         propagate demo mode (2022 data) to every screen.
+//   ?simulate=0|1|2 force a live-match count for offline testing
+//                   (passed straight through to /api/live).
+const CONFIG   = new URLSearchParams(location.search);
+const OFFICE   = CONFIG.get('office') === '2' ? 2 : 1;
+const DEMO     = CONFIG.get('demo') === '1' || CONFIG.get('demo') === 'true';
+const SIMULATE = CONFIG.get('simulate');
+
+// ── Poll cadences & timing (from brief) ───────────────────────
+const IDLE_POLL_MS = 5 * 60 * 1000; // no live match → poll every 5 min
+const LIVE_POLL_MS = 10 * 1000;     // match(es) live → poll every 10 s
+const LIVE_POLL_SEC = LIVE_POLL_MS / 1000; // passed to the live screens as ?poll=
+const SLIDE_MS     = 45 * 1000;     // hold 45 s per carousel screen
+
+// ── Tournament phase boundaries (UTC instants) ────────────────
+// First WC 2026 match kicks off 11 Jun 2026; group stage wraps ~28 Jun.
+const FIRST_MATCH_KICKOFF = Date.UTC(2026, 5, 11, 16, 0);
+const GROUP_STAGE_END     = Date.UTC(2026, 5, 28, 4, 0);
+
+// Latches true the first time we ever detect a live match, so we leave the
+// pre-tournament countdown phase exactly when the first match goes live
+// (per brief), independent of the clock-based proxy above.
+let firstMatchHasStarted = false;
+
+// ── Carousels per tournament phase (Office 1 & 2 share these lists) ──
+// 'match-live' / 'match-live-pair' are never in a playlist — the live
+// state machine shows them full-screen. 'goal-overlay' is postMessage-driven.
+const PHASE_PLAYLISTS = {
+  // From now until the first match is live.
+  'pre-tournament': [
+    'tournament-countdown',
     'group-status-1',
     'group-status-2',
   ],
-  'round-of-32': [
-    'comingup-ko-unknown',
-    'comingup-ko-known',
-    'round-of-32',
-    'match-complete',
+  // Group stage, between live matches.
+  'group-stage': [
+    'group-status-1',
+    'group-status-2',
+    'match-complete',   // Recently Completed
+    'comingup-single',  // Match Coming Up (Group Stage)
   ],
-  'round-of-16': [
-    'comingup-ko-unknown',
-    'comingup-ko-known',
-    'match-complete',
-  ],
-  'quarter-finals': [
-    'comingup-ko-known',
-    'match-complete',
-  ],
-  'semi-finals': [
-    'comingup-sf',
-    'match-complete',
-  ],
-  'finals': [
-    'comingup-final',
-    'match-complete',
+  // Group stage finished → knockout.
+  'knockout': [
+    'tournament-draw',
+    'top-scorers',
+    'comingup-two',     // Matches Coming Up
+    'matches-complete', // Latest Matches results
   ],
 };
 
-// ── Stage UTC ranges (from brief) ────────────────────────────
-const STAGE_RANGES = [
-  { id:'group-stage',    start: Date.UTC(2026,5,10, 0, 0), end: Date.UTC(2026,5,28, 4, 0) },
-  { id:'round-of-32',   start: Date.UTC(2026,5,28, 4, 1), end: Date.UTC(2026,6, 4, 3, 0) },
-  { id:'round-of-16',   start: Date.UTC(2026,6, 4, 3, 1), end: Date.UTC(2026,6, 8, 0,30) },
-  { id:'quarter-finals',start: Date.UTC(2026,6, 8, 0,31), end: Date.UTC(2026,6,12, 3,30) },
-  { id:'semi-finals',   start: Date.UTC(2026,6,12, 3,31), end: Date.UTC(2026,6,14,21,30) },
-  { id:'finals',        start: Date.UTC(2026,6,14,21,31), end: Date.UTC(2026,6,19,21,30) },
-];
-
-function getActiveStage() {
+function getPhase() {
   const now = Date.now();
-  for (const s of STAGE_RANGES) {
-    if (now >= s.start && now <= s.end) return s.id;
-  }
-  // Before tournament or after — default to group-stage playlist
-  return 'group-stage';
+  if (now < FIRST_MATCH_KICKOFF && !firstMatchHasStarted) return 'pre-tournament';
+  if (now <= GROUP_STAGE_END) return 'group-stage';
+  return 'knockout';
 }
 
-// Returns the playlist for the current stage, filtered to only
-// screens that are actually registered (built) in SCREENS.
+// Returns the playlist for the current phase, filtered to only screens
+// that are actually registered (built) in SCREENS.
 function getActivePlaylist() {
-  const stage    = getActiveStage();
-  const playlist = STAGE_CAROUSELS[stage] ?? STAGE_CAROUSELS['group-stage'];
-  const built    = new Set(SCREENS.map(s => s.id));
-  // Only include screens that exist — silently skips unbuilt ones
-  return playlist.filter(id => built.has(id));
+  const phase = getPhase();
+  const list  = PHASE_PLAYLISTS[phase] ?? PHASE_PLAYLISTS['pre-tournament'];
+  const built = new Set(SCREENS.map(s => s.id));
+  return list.filter(id => built.has(id));
 }
 
 // ═══════════════════════════════════════════════════════════════
 //  STATE
 // ═══════════════════════════════════════════════════════════════
-let currentScreenId   = 'comingup-single';
+let currentScreenId   = null;
+let currentSrc        = null;   // last src loaded into the iframe (dedup guard)
 let carouselPlaying   = false;
 let carouselTimer     = null;
 let progressTimer     = null;
 let carouselIndex     = 0;
-let slideDuration     = 45000;
+let slideDuration     = SLIDE_MS;
+
+// Live state machine: 'none' (carousel rotating) | 'single' | 'pair'.
+let liveMode  = 'none';
+let liveTimer = null;
 
 // ═══════════════════════════════════════════════════════════════
 //  NAVIGATION
@@ -317,15 +335,32 @@ function screenById(id) {
   return SCREENS.find(s => s.id === id);
 }
 
-function buildSrc(screen) {
+function buildSrc(screen, extra = {}) {
   if (!screen) return '';
-  return screen.urlParam ? `${screen.src}?scenario=${screen.urlParam}` : screen.src;
+  const qs = new URLSearchParams();
+  if (screen.urlParam) qs.set('scenario', screen.urlParam);
+  if (DEMO) qs.set('demo', '1');
+  for (const [k, v] of Object.entries(extra)) {
+    if (v != null && v !== '') qs.set(k, String(v));
+  }
+  const s = qs.toString();
+  return s ? `${screen.src}?${s}` : screen.src;
 }
 
-function goToScreen(id, fromCarousel = false) {
+// opts: { params }  — params are merged into the iframe src query string.
+function goToScreen(id, opts = {}) {
   const screen = screenById(id);
   if (!screen) return;
 
+  const src = buildSrc(screen, opts.params || {});
+  // Already showing this exact src — skip the reload. This keeps a live
+  // screen (and its synthesised match clock) alive across the 5 s polls.
+  if (src === currentSrc) {
+    currentScreenId = id;
+    return;
+  }
+
+  currentSrc = src;
   currentScreenId = id;
   label.textContent = screen.label;
   updateStatus();
@@ -334,7 +369,7 @@ function goToScreen(id, fromCarousel = false) {
   overlay.classList.add('fade-in');
 
   setTimeout(() => {
-    frame.src = buildSrc(screen);
+    frame.src = src;
     // Fade back in once iframe loads
     frame.onload = () => {
       overlay.classList.remove('fade-in');
@@ -367,7 +402,7 @@ function advanceCarousel() {
   const playlist = getActivePlaylist();
   if (playlist.length === 0) return;
   carouselIndex = (carouselIndex + 1) % playlist.length;
-  goToScreen(playlist[carouselIndex], true);
+  goToScreen(playlist[carouselIndex], { fromCarousel: true });
   startProgressBar(slideDuration);
   updateStatus();
 }
@@ -375,13 +410,15 @@ function advanceCarousel() {
 function playCarousel() {
   if (carouselPlaying) return;
   carouselPlaying = true;
-  // Sync index to current screen's position in the active playlist
+  // Sync index to current screen's position in the active playlist; if the
+  // current screen isn't in it (e.g. just returned from a live screen),
+  // start from the top.
   const playlist = getActivePlaylist();
   const pos = playlist.indexOf(currentScreenId);
   carouselIndex = pos >= 0 ? pos : 0;
+  if (pos < 0 && playlist.length) goToScreen(playlist[0], { fromCarousel: true });
   document.getElementById('play-btn').classList.add('active');
   document.getElementById('pause-btn').classList.remove('active');
-  document.getElementById('st-carousel').textContent = 'playing';
   startProgressBar(slideDuration);
   carouselTimer = setInterval(advanceCarousel, slideDuration);
   updateStatus();
@@ -394,7 +431,6 @@ function pauseCarousel() {
   stopProgressBar();
   document.getElementById('play-btn').classList.remove('active');
   document.getElementById('pause-btn').classList.add('active');
-  document.getElementById('st-carousel').textContent = 'paused';
   updateStatus();
 }
 
@@ -403,13 +439,13 @@ function pauseCarousel() {
 // ═══════════════════════════════════════════════════════════════
 function updateStatus() {
   const playlist = getActivePlaylist();
-  const stage    = getActiveStage();
+  const phase    = getPhase();
   document.getElementById('st-screen').textContent =
     screenById(currentScreenId)?.label ?? '—';
   document.getElementById('st-carousel').textContent =
-    carouselPlaying ? 'playing' : 'paused';
+    liveMode !== 'none' ? `live · ${liveMode}` : (carouselPlaying ? 'playing' : 'paused');
   document.getElementById('st-mode').textContent =
-    `${stage} · ${playlist.length} screen${playlist.length !== 1 ? 's' : ''}`;
+    `office ${OFFICE} · ${phase} · ${playlist.length} screen${playlist.length !== 1 ? 's' : ''}`;
 }
 
 // Countdown timer in status bar
@@ -471,48 +507,104 @@ function showGoalOverlay(scorerText) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  LIVE MATCH DETECTION — poll /api/match every 60s
-//  If a live match is found, inject match-live into the carousel
-//  as the first screen; remove it when no longer live.
+//  LIVE STATE MACHINE — poll /api/live (5 min idle, 5 s when live)
+//
+//  0 live      → rotate the phase carousel (45 s/screen)
+//  1 live      → hold full-screen on Match Live
+//  2+ live     → hold full-screen on the dual Match Live — Pair
+//                screen, with primary/secondary chosen for THIS office
 // ═══════════════════════════════════════════════════════════════
-let liveMatchActive = false;
 
-async function checkForLiveMatch() {
-  try {
-    const res  = await fetch('/api/match');
-    const data = await res.json();
-    if (!data.ok) return;
+// When two matches are live the pair screen shows one primary + one
+// secondary. /api/live returns fixtures already sorted (Australia first,
+// then earliest kickoff, then id), so fixtures[0] is the natural Office-1
+// primary and fixtures[1] the secondary; Office 2 swaps them. To pin a
+// specific match as Office-1 primary for a known simultaneous pairing, add
+// an entry keyed by the sorted "<idA>-<idB>" → the fixtureId to lead with.
+const PRIMARY_OVERRIDES = {
+  // '1234567-1234568': 1234568,
+};
 
-    const isLive = ['1H','2H','HT','ET','BT','P','LIVE','INT'].includes(data.statusShort);
-    const hasPair = data.concurrentMatch != null; // future extension
-
-    if (isLive && !liveMatchActive) {
-      liveMatchActive = true;
-      // Prepend match-live to the active playlist by temporarily overriding
-      // the carousel — navigate there immediately if carousel is playing
-      if (carouselPlaying) {
-        pauseCarousel();
-        goToScreen('match-live');
-        playCarousel();
-      }
-    } else if (!isLive && liveMatchActive) {
-      liveMatchActive = false;
-    }
-  } catch (e) {
-    // silently ignore — network may be unavailable
-  }
+function liveSignature(fixtures) {
+  return fixtures.map(f => f.fixtureId).sort((a, b) => a - b).join('-');
 }
 
-// Check for live match every 60s
-setInterval(checkForLiveMatch, 60000);
-checkForLiveMatch(); // immediate check on load
+function pickPair(fixtures) {
+  let [primary, secondary] = fixtures;
+  const override = PRIMARY_OVERRIDES[liveSignature(fixtures)];
+  if (override != null) {
+    const wanted = fixtures.find(f => f.fixtureId === override);
+    const other  = fixtures.find(f => f.fixtureId !== override);
+    if (wanted && other) { primary = wanted; secondary = other; }
+  }
+  // Office 2 mirrors Office 1 so the two displays cover both matches.
+  if (OFFICE === 2) [primary, secondary] = [secondary, primary];
+  return { primary, secondary };
+}
+
+function enterCarouselMode() {
+  if (liveMode !== 'none') {
+    // Returning from a live screen → resume the phase carousel.
+    liveMode = 'none';
+    carouselPlaying = false; // force playCarousel to re-init from the top
+    const playlist = getActivePlaylist();
+    if (playlist.length) goToScreen(playlist[0], { fromCarousel: true });
+    playCarousel();
+    return;
+  }
+  // Already rotating — just make sure it's running (first boot).
+  if (!carouselPlaying && !carouselTimer) playCarousel();
+}
+
+function enterSingleMode() {
+  liveMode = 'single';
+  if (carouselPlaying || carouselTimer) pauseCarousel();
+  // Single screen self-resolves the live fixture; poll it every LIVE_POLL_SEC.
+  goToScreen('match-live', { params: { poll: LIVE_POLL_SEC } });
+  updateStatus();
+}
+
+function enterPairMode(fixtures) {
+  liveMode = 'pair';
+  if (carouselPlaying || carouselTimer) pauseCarousel();
+  const { primary, secondary } = pickPair(fixtures);
+  goToScreen('match-live-pair', {
+    params: { poll: LIVE_POLL_SEC, fixture: primary?.fixtureId, other: secondary?.fixtureId },
+  });
+  updateStatus();
+}
+
+async function checkLive() {
+  let count = 0;
+  let fixtures = [];
+  try {
+    const qs = new URLSearchParams();
+    if (SIMULATE != null) qs.set('simulate', SIMULATE);
+    if (DEMO) qs.set('demo', '1');
+    const res  = await fetch(`/api/live${qs.toString() ? `?${qs}` : ''}`, { cache: 'no-store' });
+    const data = await res.json();
+    if (data.ok) { count = data.count || 0; fixtures = data.fixtures || []; }
+  } catch (e) {
+    // Network/API down — fall back to the carousel rather than getting
+    // stuck on a stale live screen.
+    count = 0;
+  }
+
+  if (count > 0) firstMatchHasStarted = true;
+
+  if (count >= 2)       enterPairMode(fixtures);
+  else if (count === 1) enterSingleMode();
+  else                  enterCarouselMode();
+
+  // 5 s while anything is live, otherwise 5 min.
+  liveTimer = setTimeout(checkLive, count > 0 ? LIVE_POLL_MS : IDLE_POLL_MS);
+}
 
 // ═══════════════════════════════════════════════════════════════
-//  BOOT — start on coming up single, carousel paused
+//  BOOT — resolve live state, then auto-run (carousel or live screen)
 // ═══════════════════════════════════════════════════════════════
-goToScreen('comingup-single');
 updateStatus();
-document.getElementById('pause-btn').classList.add('active');
+checkLive();
 </script>
 </body>
 </html>
