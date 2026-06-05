@@ -27,7 +27,7 @@ Sponsor-branded for Commonwealth Bank of Australia (CBA), principal partner of F
 
 ## Quick orientation
 
-- **Live URL:** https://cbasocceroos.vercel.app/
+- **Live URL:** https://cbasocceroos-test.vercel.app/
 - **Figma file key:** `eBWaSO7mwm2Ja5NiEFDHAo`
 - **API:** api-football.com (`league=1&season=2026`)
 - **Australia is in Group D** for WC 2026

@@ -3,7 +3,7 @@
 ## Vercel
 
 - **Project name:** `cbasocceroos`
-- **Live URL:** https://cbasocceroos.vercel.app/
+- **Live URL:** https://cbasocceroos-test.vercel.app/
 - **Stack:** Static HTML + vanilla JS + serverless API route at `/api/match`
 
 ## Environment variables
