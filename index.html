@@ -54,23 +54,6 @@ html, body {
   transition: width linear;
 }
 
-/* ── SCREEN LABEL (dev only) ─────────────────────────── */
-#screen-label {
-  position: fixed;
-  top: 16px; left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0,0,0,0.7);
-  color: var(--color-mid-grey);
-  font-size: 13px;
-  font-weight: 400;
-  letter-spacing: 1px;
-  padding: 4px 14px;
-  border-radius: 20px;
-  z-index: 300;
-  pointer-events: none;
-  transition: opacity 0.3s;
-}
-
 /* ── DEV CONTROLS ────────────────────────────────────── */
 #dev-bar {
   position: fixed;
@@ -136,7 +119,6 @@ html, body {
 <iframe id="screen-frame" src="screen-matchlive.html" title="Dashboard screen"></iframe>
 <iframe id="goal-frame" title="Goal overlay" style="display:none;position:absolute;inset:0;width:1080px;height:1920px;border:none;z-index:100;pointer-events:none;"></iframe>
 <div id="progress-bar"></div>
-<div id="screen-label">Match Live</div>
 
 <!-- DEV CONTROLS -->
 <div id="dev-bar">
@@ -328,7 +310,6 @@ let liveTimer = null;
 // ═══════════════════════════════════════════════════════════════
 const frame   = document.getElementById('screen-frame');
 const overlay = document.getElementById('transition-overlay');
-const label   = document.getElementById('screen-label');
 const bar     = document.getElementById('progress-bar');
 
 function screenById(id) {
@@ -362,7 +343,6 @@ function goToScreen(id, opts = {}) {
 
   currentSrc = src;
   currentScreenId = id;
-  label.textContent = screen.label;
   updateStatus();
 
   // Fade out
@@ -607,10 +587,36 @@ async function checkLive() {
 // preview, e.g. the carousel-previews monitor). The hidden status fields
 // (#st-screen/#st-carousel/#st-mode) are still updated, so a same-origin
 // parent can read each office's current state.
-if (CONFIG.get('chrome') === '0') {
+// Dev bar visibility. Priority: ?chrome=0 always hides (clean embed/preview).
+// Otherwise restore the last toggle state from localStorage, so a refresh on
+// the office display doesn't bring the bar back if it was hidden.
+const DEVBAR_KEY = 'cba-devbar-hidden';
+function setDevBarHidden(hidden) {
   const db = document.getElementById('dev-bar');
-  if (db) db.style.display = 'none';
+  if (db) db.style.display = hidden ? 'none' : '';
 }
+if (CONFIG.get('chrome') === '0') {
+  setDevBarHidden(true);
+} else {
+  let hidden = false;
+  try { hidden = localStorage.getItem(DEVBAR_KEY) === '1'; } catch (_) {}
+  setDevBarHidden(hidden);
+}
+
+// Toggle the dev control bar with the "d" key (or backtick). Lets you keep it
+// hidden on the physical display and reveal it only when driving screens. The
+// new state is persisted so it survives a page reload.
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'd' && e.key !== '`') return;
+  // Don't hijack the key while focused inside a dev control.
+  const t = e.target;
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA')) return;
+  const db = document.getElementById('dev-bar');
+  if (!db) return;
+  const hidden = db.style.display !== 'none';
+  setDevBarHidden(hidden);
+  try { localStorage.setItem(DEVBAR_KEY, hidden ? '1' : '0'); } catch (_) {}
+});
 
 updateStatus();
 checkLive();
