@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=1080">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="typography.css">
+<link rel="stylesheet" href="fonts.css">
+<title>Match Live — Foundry</title>
+<style>
+
+
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{
+  width:1080px;height:1920px;overflow:hidden;
+  background:var(--off-black);
+  font-family:'CBABeaconSans',sans-serif;
+  color:var(--white);
+}
+.screen{
+  width:1080px;height:1920px;padding:60px;
+  display:flex;flex-direction:column;gap:79px;
+  overflow:hidden;
+}
+/* Trim font leading so the new fixed heights match the Figma cap-height boxes */
+.score-num,.match-clock,.match-period,.team-name,.poss-label,.poss-pct,
+.stat-label,.stat-vals span,.feed-top,.feed-desc{
+  text-box-trim:trim-both;text-box-edge:cap alphabetic;
+}
+
+/* ── Header ── */
+.header-block{display:flex;flex-direction:column;gap:60px;flex-shrink:0;}
+.top-row{display:flex;align-items:flex-start;justify-content:space-between;}
+.page-title{
+  font-size:64px;font-weight:800;line-height:68px;letter-spacing:3.2px;
+  color:var(--brand-yellow);
+}
+/* Foundry data-recency chip (Figma 770:855): black pill, yellow label.
+   Text is driven by js below off the same poll status match-live.js writes. */
+.recency-chip{
+  background:var(--badge-updated-bg);
+  color:var(--badge-updated-text);
+  padding:16px;border-radius:6px;
+  font-size:24px;font-weight:800;letter-spacing:1.2px;
+  white-space:nowrap;flex-shrink:0;
+}
+/* "fresh" = just polled: invert to the high-contrast yellow fill briefly. */
+.recency-chip.fresh{background:var(--badge-fresh-bg);color:var(--badge-fresh-text);}
+/* "stale" = polls failing / data delayed. */
+.recency-chip.stale{background:var(--badge-updated-bg);color:var(--mid-grey);}
+.meta-section{display:flex;flex-direction:column;gap:20px;height:108px;}
+.div-thick{width:100%;height:16px;background:var(--white);flex-shrink:0;}
+.meta-row{
+  display:flex;justify-content:space-between;align-items:baseline;gap:24px;
+  font-size:48px;font-weight:800;letter-spacing:2.4px;
+  color:var(--brand-yellow);
+}
+.meta-l{text-align:left;}
+.meta-r{text-align:right;}
+
+/* ── Score block (fixed 481px tall, Figma h-962 ÷2) ── */
+.score-section{
+  position:relative;                 /* anchor for the absolutely-centred clock */
+  display:flex;align-items:stretch;justify-content:space-between;
+  gap:380px;padding:0 60px;height:481px;flex-shrink:0;
+}
+.team-col{
+  flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:space-between;
+}
+.score-num{
+  font-size:300px;font-weight:800;line-height:1;letter-spacing:0;
+  color:var(--white);text-align:center;
+}
+.team-avatar{display:flex;flex-direction:column;align-items:center;gap:30px;}
+.flag-circle{
+  width:150px;height:150px;border-radius:50%;overflow:hidden;
+  background:#444;flex-shrink:0;
+}
+.flag-circle img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.team-name{
+  font-size:42px;font-weight:800;line-height:1;letter-spacing:0;
+  color:var(--white);text-transform:uppercase;text-align:center;white-space:nowrap;
+}
+.centre-col{
+  /* Absolutely centred on the screen so the clock + dividers never shift
+     when the two scores have different digit widths. */
+  position:absolute;left:50%;top:0;height:100%;transform:translateX(-50%);
+  width:260px;
+  display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+}
+.vert-seg{
+  width:20px;height:165px;border-radius:10px;
+  background:var(--dark-grey);flex-shrink:0;
+}
+.clock-block{display:flex;flex-direction:column;align-items:center;gap:20px;}
+.match-clock{
+  font-size:60px;font-weight:800;line-height:1.086;letter-spacing:3px;
+  color:var(--white);text-align:center;white-space:nowrap;
+}
+.match-period{
+  font-size:40px;font-weight:400;line-height:1.086;letter-spacing:2px;
+  color:var(--white);text-align:center;white-space:nowrap;
+}
+
+/* ── Rolling match feed wrapper (poss + stats + feed) ── */
+.rolling-feed{display:flex;flex-direction:column;gap:60px;flex-shrink:0;}
+
+/* ── Possession bar (large = single, small = pair) ── */
+.poss-wrap{display:flex;flex-direction:column;gap:20px;flex-shrink:0;}
+.poss-label{
+  font-size:24px;font-weight:800;letter-spacing:0.48px;
+  color:var(--white);text-align:center;text-transform:uppercase;
+}
+.poss-row{display:flex;align-items:center;gap:20px;}
+.poss-pct{font-weight:800;white-space:nowrap;}
+.poss-pct.home{color:var(--white);}
+.poss-pct.away{color:var(--mid-grey);}
+.poss-bar{
+  flex:1;display:flex;align-items:stretch;
+  border-radius:10px;overflow:hidden;
+  background:var(--mid-grey);
+}
+.poss-fill-home{height:100%;background:var(--white);}
+.poss-flag{width:60px;height:60px;border-radius:50%;overflow:hidden;flex-shrink:0;background:#444;}  /* Figma 120 ÷2 */
+.poss-flag img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.poss-wrap--large .poss-bar{height:82px;}     /* Figma h-164 ÷2 */
+.poss-wrap--large .poss-pct{font-size:30px;letter-spacing:1.5px;}
+.poss-wrap--small .poss-bar{height:24px;}
+.poss-wrap--small .poss-pct{font-size:24px;letter-spacing:0.48px;}
+
+/* ── Stat cards (fixed 120px tall, Figma h-240 ÷2) ── */
+.stats-row{display:flex;gap:30px;flex-shrink:0;}
+.stat-card{
+  flex:1;height:120px;background:var(--charcoal);border-radius:10px;
+  padding:24px;display:flex;flex-direction:column;gap:21px;
+  justify-content:center;
+}
+.stat-label{
+  font-size:24px;font-weight:800;letter-spacing:0.72px;
+  color:var(--white);text-align:center;text-transform:uppercase;white-space:nowrap;
+}
+.stat-vals{display:flex;align-items:center;justify-content:space-between;}
+.stat-vals .stat-h,
+.stat-vals .stat-a{
+  font-size:42px;font-weight:800;line-height:1;color:var(--white);flex:1;
+}
+.stat-vals .stat-h{text-align:left;}
+.stat-vals .stat-a{text-align:right;}
+.stat-sep{
+  width:2px;height:34px;background:var(--white);
+  margin:0 12px;flex-shrink:0;
+}
+
+/* ── Events feed (fixed 408px tall, Figma h-816 ÷2) ── */
+.feed-card{
+  background:var(--charcoal);border-radius:10px;
+  padding:24px 24px 8px;
+  display:flex;flex-direction:column;gap:24px;
+  height:408px;overflow:hidden;flex-shrink:0;
+}
+.feed-item{
+  height:76px;                                  /* Figma h-152 ÷2 */
+  display:flex;flex-direction:column;gap:18px;
+  padding-bottom:20px;
+  border-bottom:1px solid var(--dark-grey);
+}
+.feed-item.last{border-bottom:none;padding-bottom:0;}
+.feed-top{
+  display:flex;align-items:center;line-height:0.7;  /* cap-trim: flex box won't honour text-box-trim */
+  font-size:30px;font-weight:800;letter-spacing:2.4px;
+  color:var(--brand-yellow);
+}
+.feed-min{width:130px;flex-shrink:0;white-space:nowrap;}      /* Figma w-260 ÷2 */
+.feed-type{flex:1;min-width:0;white-space:nowrap;}
+.feed-player{flex-shrink:0;text-align:right;white-space:nowrap;}  /* right-aligned, sizes to name */
+.feed-desc{
+  padding-left:130px;white-space:nowrap;line-height:0.7;  /* cap-trim, robust without text-box-trim */
+  font-size:24px;font-weight:700;letter-spacing:1.2px;
+  color:var(--white);
+}
+
+/* ── ALSO LIVE (pair screen only) ── */
+.also-live-section{
+  display:flex;flex-direction:column;gap:14px;flex-shrink:0;
+}
+.also-live-label{
+  font-size:22px;font-weight:800;letter-spacing:0.66px;
+  color:var(--white);text-align:center;text-transform:uppercase;
+}
+.also-card{
+  background:var(--charcoal);border-radius:10px;padding:18px 24px;
+  display:flex;align-items:center;justify-content:space-between;gap:24px;
+}
+.also-team{
+  flex:1;display:flex;align-items:center;justify-content:center;gap:24px;
+}
+.also-team.away{flex-direction:row-reverse;}
+.also-team-code{font-size:26px;font-weight:800;letter-spacing:1.3px;color:var(--white);white-space:nowrap;}
+.also-flag{width:60px;height:60px;border-radius:50%;overflow:hidden;background:#444;flex-shrink:0;}
+.also-flag img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.also-score{
+  font-size:84px;font-weight:800;line-height:1;letter-spacing:4px;
+  color:var(--white);
+}
+.also-centre{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  width:140px;flex-shrink:0;
+}
+.also-clock{font-size:32px;font-weight:800;color:var(--brand-yellow);white-space:nowrap;}
+.also-period{font-size:18px;font-weight:800;letter-spacing:0.36px;color:var(--brand-yellow);white-space:nowrap;text-transform:uppercase;}
+.also-empty{
+  color:var(--mid-grey);font-size:22px;font-weight:800;
+  text-align:center;letter-spacing:0.66px;text-transform:uppercase;
+  padding:14px 0;
+}
+
+/* ── Dev controls (small floating overlay) ── */
+#dev-bar{
+  position:fixed;bottom:8px;right:8px;z-index:9999;
+  background:rgba(0,0,0,0.85);border:1px solid #444;
+  border-radius:6px;padding:8px 10px;
+  display:flex;align-items:center;gap:8px;
+  font-family:system-ui,sans-serif;
+  font-size:11px;color:#888;
+}
+#api-status{max-width:520px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+</style>
+</head><body>
+<div class="screen">
+  <div class="header-block">
+    <div class="top-row">
+      <div class="page-title">Now<br>Playing</div>
+      <div class="recency-chip" id="recency-chip">Just updated</div>
+    </div>
+    <div class="meta-section">
+      <div class="div-thick"></div>
+      <div class="meta-row">
+        <span class="meta-l" id="meta-group">–</span>
+        <span class="meta-r" id="meta-venue">–</span>
+      </div>
+      <div class="div-thick"></div>
+    </div>
+  </div>
+
+  <div class="score-section">
+    <div class="team-col">
+      <div class="score-num" id="score-home">–</div>
+      <div class="team-avatar">
+        <div class="flag-circle"><img id="flag-home" alt=""></div>
+        <div class="team-name" id="name-home">–</div>
+      </div>
+    </div>
+    <div class="centre-col">
+      <div class="vert-seg"></div>
+      <div class="clock-block">
+        <div class="match-clock" id="match-clock">–</div>
+        <div class="match-period" id="match-period">–</div>
+      </div>
+      <div class="vert-seg"></div>
+    </div>
+    <div class="team-col">
+      <div class="score-num" id="score-away">–</div>
+      <div class="team-avatar">
+        <div class="flag-circle"><img id="flag-away" alt=""></div>
+        <div class="team-name" id="name-away">–</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="div-thick"></div>
+
+  <div class="rolling-feed">
+    <div class="poss-wrap poss-wrap--large">
+      <div class="poss-label">POSSESSION</div>
+      <div class="poss-row">
+        <span class="poss-pct home" id="poss-home">–</span>
+        <div class="poss-flag"><img id="poss-flag-home" alt=""></div>
+        <div class="poss-bar"><div class="poss-fill-home" id="poss-bar-home" style="width:50%"></div></div>
+        <div class="poss-flag"><img id="poss-flag-away" alt=""></div>
+        <span class="poss-pct away" id="poss-away">–</span>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">SHOTS</div><div class="stat-vals"><span class="stat-h" id="s-shots-h">–</span><span class="stat-sep"></span><span class="stat-a" id="s-shots-a">–</span></div></div>
+      <div class="stat-card"><div class="stat-label">ON TARGET</div><div class="stat-vals"><span class="stat-h" id="s-target-h">–</span><span class="stat-sep"></span><span class="stat-a" id="s-target-a">–</span></div></div>
+      <div class="stat-card"><div class="stat-label">CORNERS</div><div class="stat-vals"><span class="stat-h" id="s-corners-h">–</span><span class="stat-sep"></span><span class="stat-a" id="s-corners-a">–</span></div></div>
+      <div class="stat-card"><div class="stat-label">FOULS</div><div class="stat-vals"><span class="stat-h" id="s-fouls-h">–</span><span class="stat-sep"></span><span class="stat-a" id="s-fouls-a">–</span></div></div>
+    </div>
+
+    <div class="feed-card" id="feed-card"></div>
+  </div>
+</div>
+
+<div id="dev-bar"><span id="api-status">Loading…</span></div>
+
+<script src="js/flag-global.js"></script>
+<script src="js/match-live.js" defer></script>
+<script>
+// ── Data-recency chip ──────────────────────────────────────────────────────
+// match-live.js doesn't know about this chip, so we stay non-invasive: watch
+// the #api-status line it rewrites on every poll. A successful poll ("Live · …")
+// re-stamps the chip; an "Error:" marks it stale. A 1s ticker counts the age up
+// so the chip reads "Just updated" → "Updated Ns ago" → "Updated Nm ago".
+(function () {
+  const chip = document.getElementById('recency-chip');
+  const status = document.getElementById('api-status');
+  if (!chip || !status) return;
+  let lastOkTs = null;
+
+  function paint() {
+    if (lastOkTs == null) { chip.textContent = 'Connecting…'; chip.className = 'recency-chip stale'; return; }
+    const age = Math.floor((Date.now() - lastOkTs) / 1000);
+    if (age < 5)        { chip.textContent = 'Just updated';        chip.className = 'recency-chip fresh'; }
+    else if (age < 90)  { chip.textContent = `Updated ${age}s ago`; chip.className = 'recency-chip'; }
+    else                { chip.textContent = `Updated ${Math.floor(age / 60)}m ago`; chip.className = 'recency-chip stale'; }
+  }
+
+  function onStatus() {
+    const t = status.textContent || '';
+    if (t.startsWith('Live')) { lastOkTs = Date.now(); paint(); }
+    else if (t.startsWith('Error')) { chip.textContent = 'Reconnecting…'; chip.className = 'recency-chip stale'; }
+  }
+
+  new MutationObserver(onStatus).observe(status, { childList: true, characterData: true, subtree: true });
+  onStatus();
+  setInterval(paint, 1000);
+})();
+</script>
+</body></html>

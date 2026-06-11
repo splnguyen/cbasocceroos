@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=1080">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="typography.css">
+<link rel="stylesheet" href="fonts.css">
+<title>Recently Completed — Foundry</title>
+<style>
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{
+  width:1080px;height:1920px;overflow:hidden;
+  background:var(--off-black);
+  font-family:'CBABeaconSans',sans-serif;
+  color:var(--white);
+}
+.screen{
+  width:1080px;height:1920px;padding:60px;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+/* Vertical rhythm mirrors Figma: 79px between major blocks, 60px poss→grid */
+.header-block{display:flex;flex-direction:column;gap:60px;flex-shrink:0;}
+.top-row{display:flex;align-items:flex-start;justify-content:space-between;}
+.page-title{
+  font-size:64px;font-weight:800;line-height:68px;letter-spacing:3.2px;
+  color:var(--brand-yellow);
+}
+.badge{
+  background:var(--black);color:var(--brand-yellow);
+  font-size:24px;font-weight:800;letter-spacing:1.2px;
+  padding:16px;border-radius:6px;
+  white-space:nowrap;flex-shrink:0;
+}
+.header-sub{display:flex;flex-direction:column;gap:16px;}
+.div-thick{width:100%;height:16px;background:var(--white);flex-shrink:0;}
+.screen > .div-thick{margin-top:79px;}
+.meta-row{
+  font-size:48px;font-weight:800;letter-spacing:2.4px;
+  display:flex;justify-content:space-between;align-items:baseline;gap:24px;
+}
+
+.meta-row{color:var(--white);}
+.meta-l{text-align:left;}
+.meta-r{text-align:right;}
+
+.score-section{display:flex;align-items:stretch;justify-content:space-between;gap:20px;flex-shrink:0;height:480px;margin-top:79px;}
+.team-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:30px;justify-content:space-between;}
+.score-num{font-size:300px;font-weight:800;line-height:0.7;color:var(--white);text-align:center;}
+.team-col.loser .score-num{color:var(--mid-grey);}
+.team-col.loser .team-name{color:var(--mid-grey);}
+.team-col.loser .flag-circle img{filter:grayscale(1) opacity(0.55);}
+.team-avatar{display:flex;flex-direction:column;align-items:center;gap:30px;}
+.flag-circle{width:150px;height:150px;border-radius:50%;overflow:hidden;background:#444;flex-shrink:0;}
+.flag-circle img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.team-name{font-size:42px;font-weight:800;color:var(--white);text-transform:uppercase;text-align:center;white-space:nowrap;}
+.centre-col{width:260px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:space-between;}
+.vert-seg{width:16px;height:170px;background:var(--dark-grey);flex-shrink:0;}
+.result-block{display:flex;flex-direction:column;gap:16px;align-items:center;}
+.result-ft{font-size:48px;font-weight:800;color:var(--white);}
+.result-line{font-size:30px;font-weight:800;color:var(--white);text-align:center;white-space:nowrap;}
+
+.poss-wrap{display:flex;flex-direction:column;gap:20px;flex-shrink:0;margin-top:79px;}
+.poss-label{font-size:24px;font-weight:800;letter-spacing:0.48px;color:var(--white);text-align:center;text-transform:uppercase;}
+.poss-row{display:flex;align-items:center;gap:20px;}
+.poss-pct{font-size:30px;font-weight:800;letter-spacing:2.4px;white-space:nowrap;}
+.poss-pct.home{color:var(--white);}
+.poss-pct.away{color:var(--mid-grey);}
+.poss-flag{width:60px;height:60px;border-radius:50%;overflow:hidden;background:#444;flex-shrink:0;}
+.poss-flag img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.poss-bar{flex:1;display:flex;height:82px;border-radius:10px;overflow:hidden;background:var(--mid-grey);}
+.poss-fill-home{height:100%;background:var(--white);}
+
+/* Match Feed: left = 4×2 fixed stat cards (485.5px), right = performers (454.5px) */
+.bottom-grid{
+  display:grid;grid-template-columns:485.5px 454.5px;gap:20px;
+  height:540px;margin-top:60px;flex-shrink:0;
+}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(4,120px);gap:20px;}
+.stat-card{
+  background:var(--charcoal);border-radius:10px;padding:18px;
+  display:flex;flex-direction:column;justify-content:center;gap:21px;
+}
+.stat-label{font-size:18px;font-weight:800;letter-spacing:0.9px;color:var(--white);text-align:center;text-transform:uppercase;}
+.stat-vals{display:flex;align-items:center;justify-content:space-between;}
+.stat-vals .stat-h,.stat-vals .stat-a{font-size:42px;font-weight:800;line-height:1;flex:1;}
+.stat-vals .stat-h{text-align:left;color:var(--white);}
+.stat-vals .stat-a{text-align:right;color:var(--mid-grey);}
+.stat-sep{width:3px;height:34px;background:var(--white);margin:0 8px;flex-shrink:0;}
+
+.top-performers{
+  background:var(--charcoal);border-radius:10px;padding:24px;
+  display:flex;flex-direction:column;gap:30px;
+}
+.tp-title{font-size:24px;font-weight:800;letter-spacing:0.48px;color:var(--white);text-transform:uppercase;}
+.tp-list{display:flex;flex-direction:column;gap:20px;flex:1;}
+.tp-row{
+  background:var(--white);border-radius:10px;padding:8px 20px;
+  display:flex;align-items:center;gap:20px;flex:1;
+}
+.tp-row.loser{background:var(--dark-grey);}
+.tp-row.loser .tp-name,.tp-row.loser .tp-stats{color:var(--white);}
+.tp-flag{width:50px;height:50px;border-radius:50%;overflow:hidden;background:#444;flex-shrink:0;}
+.tp-flag img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.tp-name{font-size:24px;font-weight:800;letter-spacing:0.48px;color:var(--off-black);text-transform:uppercase;flex:1;}
+.tp-stats{font-size:24px;font-weight:800;letter-spacing:0.48px;color:var(--off-black);white-space:nowrap;}
+</style>
+</head><body>
+<div class="screen">
+  <div class="header-block">
+    <div class="top-row">
+      <div class="page-title">Recently<br>Completed</div>
+      <div class="badge" id="updatedBadge">Just updated</div>
+    </div>
+    <div class="header-sub">
+      <div class="div-thick"></div>
+      <div class="meta-row">
+        <span class="meta-l" id="meta-group">–</span>
+        <span class="meta-r" id="meta-venue">–</span>
+      </div>
+      <div class="div-thick"></div>
+    </div>
+  </div>
+
+  <div class="score-section">
+    <div class="team-col home">
+      <div class="score-num" id="score-home">–</div>
+      <div class="team-avatar">
+        <div class="flag-circle"><img id="flag-home" alt=""></div>
+        <div class="team-name" id="name-home">–</div>
+      </div>
+    </div>
+    <div class="centre-col">
+      <div class="vert-seg"></div>
+      <div class="result-block">
+        <div class="result-ft">FT</div>
+        <div class="result-line" id="result-line">–</div>
+      </div>
+      <div class="vert-seg"></div>
+    </div>
+    <div class="team-col away">
+      <div class="score-num" id="score-away">–</div>
+      <div class="team-avatar">
+        <div class="flag-circle"><img id="flag-away" alt=""></div>
+        <div class="team-name" id="name-away">–</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="div-thick"></div>
+
+  <div class="poss-wrap">
+    <div class="poss-label">POSSESSION</div>
+    <div class="poss-row">
+      <span class="poss-pct home" id="poss-home">–</span>
+      <div class="poss-flag"><img id="poss-flag-home" alt=""></div>
+      <div class="poss-bar"><div class="poss-fill-home" id="poss-bar-home" style="width:50%"></div></div>
+      <div class="poss-flag"><img id="poss-flag-away" alt=""></div>
+      <span class="poss-pct away" id="poss-away">–</span>
+    </div>
+  </div>
+
+  <div class="bottom-grid">
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">SHOTS</div><div class="stat-vals"><span class="stat-h" id="s-shots-h">–</span><span class="stat-sep"></span><span class="stat-a" id="s-shots-a">–</span></div></div>
+      <div class="stat-card"><div class="stat-label">ON TARGET</div><div class="stat-vals"><span class="stat-h" id="s-target-h">–</span><span class="stat-sep"></span><span class="stat-a" id="s-target-a">–</span></div></div>
+      <div class="stat-card"><div class="stat-label">FOULS</div><div class="stat-vals"><span class="stat-h" id="s-fouls-h">–</span><span class="stat-sep"></span><span class="stat-a" id="s-fouls-a">–</span></div></div>
+      <div class="stat-card"><div class="stat-label">CORNERS</div><div class="stat-vals"><span class="stat-h" id="s-corners-h">–</span><span class="stat-sep"></span><span class="stat-a" id="s-corners-a">–</span></div></div>
+      <div class="stat-card"><div class="stat-label">PASSES</div><div class="stat-vals"><span class="stat-h" id="s-passes-h">–</span><span class="stat-sep"></span><span class="stat-a" id="s-passes-a">–</span></div></div>
+      <div class="stat-card"><div class="stat-label">PASS ACCURACY</div><div class="stat-vals"><span class="stat-h" id="s-passacc-h">–</span><span class="stat-sep"></span><span class="stat-a" id="s-passacc-a">–</span></div></div>
+      <div class="stat-card"><div class="stat-label">SAVES</div><div class="stat-vals"><span class="stat-h" id="s-saves-h">–</span><span class="stat-sep"></span><span class="stat-a" id="s-saves-a">–</span></div></div>
+      <div class="stat-card"><div class="stat-label">OFFSIDES</div><div class="stat-vals"><span class="stat-h" id="s-offsides-h">–</span><span class="stat-sep"></span><span class="stat-a" id="s-offsides-a">–</span></div></div>
+    </div>
+    <div class="top-performers">
+      <div class="tp-title">TOP PERFORMERS</div>
+      <div class="tp-list" id="tp-list">
+        <div class="tp-row"><div class="tp-flag"><img alt=""></div><span class="tp-name">–</span><span class="tp-stats">–</span></div>
+        <div class="tp-row"><div class="tp-flag"><img alt=""></div><span class="tp-name">–</span><span class="tp-stats">–</span></div>
+        <div class="tp-row loser"><div class="tp-flag"><img alt=""></div><span class="tp-name">–</span><span class="tp-stats">–</span></div>
+        <div class="tp-row"><div class="tp-flag"><img alt=""></div><span class="tp-name">–</span><span class="tp-stats">–</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="js/flag-global.js"></script>
+<script src="js/matchcomplete.js" defer></script>
+</body></html>

@@ -20,25 +20,139 @@ html, body { width: 1080px; height: 1920px; overflow: hidden; background: #000; 
 <iframe id="screen-frame" src="screen-tournament-countdown-foundry.html" title="Foundry 1 screen"></iframe>
 
 <script>
-// ── Foundry 1 carousel ────────────────────────────────────────────────────
-// Playlist: add more screen entries here to extend the carousel.
+// ── Foundry 1 controller ──────────────────────────────────────────────────
+// Mirrors the office-1/2 live state machine (index.html): rotate a phase
+// carousel while idle, but poll /api/live and flip full-screen to the foundry
+// Match Live screen the instant a match goes in-play. Polling ramps to every
+// 5 s in the final minute before a scheduled kickoff so we go live ASAP.
+//
+//   ?demo=1        propagate demo mode to /api/live, /api/upcoming + live screen
+//   ?simulate=0|1|2 force a live-match count (2022 fixtures) for offline testing
+
+const CONFIG   = new URLSearchParams(location.search);
+const DEMO     = CONFIG.get('demo') === '1' || CONFIG.get('demo') === 'true';
+const SIMULATE = CONFIG.get('simulate');
+
+// ── Poll cadences & timing (match office-1/2 in index.html) ───────────────
+const IDLE_POLL_MS = 5 * 60 * 1000; // no live match → poll every 5 min
+const LIVE_POLL_MS = 10 * 1000;     // match(es) live → poll every 10 s
+const LIVE_POLL_SEC = LIVE_POLL_MS / 1000; // passed to the live screen as ?poll=
+const SLIDE_DURATION_MS = 45000;    // hold 45 s per carousel screen
+// In the final minute before a scheduled kickoff, ramp polling to every 5 s so
+// the live screen appears the instant the match goes in-play.
+const PREKICKOFF_WINDOW_MS = 60 * 1000;
+const PREKICKOFF_POLL_MS   = 5 * 1000;
+// First WC 2026 match: 5:00am AEST, 12 Jun 2026 (= 19:00 UTC, 11 Jun). Used only
+// as a fallback target for the pre-kickoff ramp if /api/upcoming is unreachable.
+const FIRST_MATCH_KICKOFF = Date.UTC(2026, 5, 11, 19, 0);
+
+// ── Carousel playlist (foundry-branded screens) ───────────────────────────
 const playlist = [
   { src: 'screen-tournament-countdown-foundry.html', label: 'Tournament Countdown' },
 ];
 
-const SLIDE_DURATION_MS = 45000; // 45 s per slide (production default)
-
-let index = 0;
+// ── State ─────────────────────────────────────────────────────────────────
 const frame = document.getElementById('screen-frame');
+let carouselIndex   = 0;
+let carouselTimer   = null;
+let liveTimer       = null;
+let liveMode        = false;   // true while showing the foundry live screen
+let currentSrc      = null;    // last src loaded (dedup guard — keeps the live
+                               // screen + its synth clock alive across re-polls)
+let nextKickoffEpoch = null;   // epoch (ms) of the next scheduled fixture, or null
 
+// Navigate the iframe, deduping on src so an unchanged live screen isn't
+// reloaded (which would reset its match clock) on every poll.
+function goTo(src) {
+  if (src === currentSrc) return;
+  currentSrc = src;
+  frame.src = src;
+}
+
+// ── Carousel (idle) ───────────────────────────────────────────────────────
 function advance() {
-  index = (index + 1) % playlist.length;
-  frame.src = playlist[index].src;
+  carouselIndex = (carouselIndex + 1) % playlist.length;
+  goTo(playlist[carouselIndex].src);
+}
+function startCarousel() {
+  if (liveMode) liveMode = false;
+  goTo(playlist[carouselIndex].src);
+  clearInterval(carouselTimer);
+  carouselTimer = playlist.length > 1 ? setInterval(advance, SLIDE_DURATION_MS) : null;
 }
 
-if (playlist.length > 1) {
-  setInterval(advance, SLIDE_DURATION_MS);
+// ── Live ──────────────────────────────────────────────────────────────────
+// No foundry pair screen exists, so any live count ≥ 1 shows the single foundry
+// Match Live screen pinned to the primary fixture (/api/live sorts Australia
+// first), matching office-1's primary pick.
+function enterLive(fixtures) {
+  liveMode = true;
+  clearInterval(carouselTimer);
+  carouselTimer = null;
+  const primary = fixtures[0];
+  const qs = new URLSearchParams();
+  qs.set('poll', LIVE_POLL_SEC);
+  if (primary?.fixtureId != null) qs.set('fixture', primary.fixtureId);
+  if (DEMO) qs.set('demo', '1');
+  goTo(`screen-matchlive-foundry.html?${qs}`);
 }
+
+// ── Pre-kickoff polling ramp (same logic as index.html) ───────────────────
+async function refreshNextKickoff() {
+  try {
+    const qs = new URLSearchParams();
+    if (DEMO) qs.set('demo', '1');
+    const res  = await fetch(`/api/upcoming${qs.toString() ? `?${qs}` : ''}`, { cache: 'no-store' });
+    const data = await res.json();
+    if (data.ok && data.fixture?.kickoffEpoch) {
+      nextKickoffEpoch = data.fixture.kickoffEpoch;
+      return;
+    }
+  } catch (_) { /* fall through to fallback */ }
+  if (nextKickoffEpoch == null && Date.now() < FIRST_MATCH_KICKOFF) {
+    nextKickoffEpoch = FIRST_MATCH_KICKOFF;
+  }
+}
+
+function nextPollDelay(count) {
+  if (count > 0) return LIVE_POLL_MS;
+  if (nextKickoffEpoch != null) {
+    const msUntilKO     = nextKickoffEpoch - Date.now();
+    const msUntilWindow = msUntilKO - PREKICKOFF_WINDOW_MS;
+    if (msUntilKO > 0 && msUntilKO <= PREKICKOFF_WINDOW_MS) return PREKICKOFF_POLL_MS;
+    if (msUntilWindow > 0 && msUntilWindow < IDLE_POLL_MS)  return msUntilWindow;
+  }
+  return IDLE_POLL_MS;
+}
+
+async function checkLive() {
+  let count = 0;
+  let fixtures = [];
+  try {
+    const qs = new URLSearchParams();
+    if (SIMULATE != null) qs.set('simulate', SIMULATE);
+    if (DEMO) qs.set('demo', '1');
+    const res  = await fetch(`/api/live${qs.toString() ? `?${qs}` : ''}`, { cache: 'no-store' });
+    const data = await res.json();
+    if (data.ok) { count = data.count || 0; fixtures = data.fixtures || []; }
+  } catch (e) {
+    // Network/API down — fall back to the carousel rather than getting stuck
+    // on a stale live screen.
+    count = 0;
+  }
+
+  if (count >= 1) enterLive(fixtures);
+  else if (liveMode || currentSrc === null) startCarousel();
+
+  // Keep the next-kickoff target fresh when idle (refresh if unknown or past).
+  if (count === 0 && (nextKickoffEpoch == null || nextKickoffEpoch <= Date.now())) {
+    await refreshNextKickoff();
+  }
+
+  liveTimer = setTimeout(checkLive, nextPollDelay(count));
+}
+
+checkLive();
 </script>
 </body>
 </html>
