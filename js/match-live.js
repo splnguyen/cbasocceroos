@@ -233,8 +233,11 @@
   }
 
   function notifyGoal(state, team) {
+    // Overlay copy: "<player> scores for <country>". scorer = goal event's
+    // player name, team.name = country — both straight from the API. Fall back
+    // to "Goal for <country>" if the scorer isn't in the events payload yet.
     const scorer = findScorer(state.events, team.id);
-    const text = `${scorer || 'Goal'} for ${team.name}`;
+    const text = scorer ? `${scorer} scores for ${team.name}` : `Goal for ${team.name}`;
     try {
       if (window.parent && window.parent !== window) {
         window.parent.postMessage({ type: 'GOAL', scorer: text }, '*');

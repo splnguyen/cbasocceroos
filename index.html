@@ -16,7 +16,9 @@ html, body {
   width: 1080px;
   height: 1920px;
   overflow: hidden;
-  background: var(--color-charcoal);
+  /* Off-black matches the screens' background, so the brief blank iframe shown
+     during a reload is invisible rather than flashing grey behind it. */
+  background: var(--color-off-black);
   font-family: 'CBABeaconSans', sans-serif;
 }
 
@@ -34,7 +36,9 @@ html, body {
 #transition-overlay {
   position: fixed;
   inset: 0;
-  background: var(--color-charcoal);
+  /* Off-black (same as the screens) so the cover itself doesn't read as a grey
+     flash between two off-black screens. */
+  background: var(--color-off-black);
   opacity: 0;
   pointer-events: none;
   z-index: 100;
@@ -254,22 +258,18 @@ const GROUP_STAGE_END     = Date.UTC(2026, 5, 28, 4, 0);
 // (per brief), independent of the clock-based proxy above.
 let firstMatchHasStarted = false;
 
-// ── Carousels per tournament phase (Office 1 & 2 share these lists) ──
-// 'match-live' / 'match-live-pair' are never in a playlist — the live
-// state machine shows them full-screen. 'goal-overlay' is postMessage-driven.
+// ── Carousels per tournament phase ──
+// 'match-live' / 'match-live-pair' are never in a playlist — the live state
+// machine shows them full-screen. 'goal-overlay' is postMessage-driven.
+//
+// pre-tournament and knockout are shared by both offices. The group-stage
+// carousel differs per office (see GROUP_STAGE_PLAYLISTS below).
 const PHASE_PLAYLISTS = {
   // From now until the first match is live.
   'pre-tournament': [
     'tournament-countdown',
     'group-status-1',
     'group-status-2',
-  ],
-  // Group stage, between live matches.
-  'group-stage': [
-    'group-status-1',
-    'group-status-2',
-    'match-complete',   // Recently Completed
-    'comingup-single',  // Match Coming Up (Group Stage)
   ],
   // Group stage finished → knockout.
   'knockout': [
@@ -278,6 +278,15 @@ const PHASE_PLAYLISTS = {
     'comingup-two',     // Matches Coming Up
     'matches-complete', // Latest Matches results
   ],
+};
+
+// Office-specific group-stage carousels (set after the first match — will
+// expand once more matches have been played):
+//   Office 1 → Recently Completed → Next Match Upcoming
+//   Office 2 → Group Stage A–F → Group Stage G–L
+const GROUP_STAGE_PLAYLISTS = {
+  1: ['match-complete', 'comingup-single'],
+  2: ['group-status-1', 'group-status-2'],
 };
 
 function getPhase() {
@@ -291,7 +300,9 @@ function getPhase() {
 // that are actually registered (built) in SCREENS.
 function getActivePlaylist() {
   const phase = getPhase();
-  const list  = PHASE_PLAYLISTS[phase] ?? PHASE_PLAYLISTS['pre-tournament'];
+  const list  = phase === 'group-stage'
+    ? (GROUP_STAGE_PLAYLISTS[OFFICE] ?? GROUP_STAGE_PLAYLISTS[1])
+    : (PHASE_PLAYLISTS[phase] ?? PHASE_PLAYLISTS['pre-tournament']);
   const built = new Set(SCREENS.map(s => s.id));
   return list.filter(id => built.has(id));
 }
@@ -355,19 +366,37 @@ function goToScreen(id, opts = {}) {
   currentScreenId = id;
   updateStatus();
 
-  // Fade out
+  // Cover with the (off-black) overlay, then swap the iframe ONLY once the cover
+  // is fully opaque, and reveal ONLY after the new screen has loaded and painted
+  // a frame. This hides the iframe's blank reload + first paint so transitions
+  // don't flash. Playlist screens render from localStorage on their `defer`
+  // script (before `load`), so cached content is on-screen at reveal time.
+  const COVER_MS = 400; // must match #transition-overlay CSS transition duration
+  overlay.classList.remove('fade-out');
   overlay.classList.add('fade-in');
 
+  clearTimeout(revealFallbackTimer);
   setTimeout(() => {
-    frame.src = src;
-    // Fade back in once iframe loads
-    frame.onload = () => {
+    let revealed = false;
+    const reveal = () => {
+      if (revealed) return;
+      revealed = true;
+      clearTimeout(revealFallbackTimer);
       overlay.classList.remove('fade-in');
       overlay.classList.add('fade-out');
-      setTimeout(() => overlay.classList.remove('fade-out'), 400);
     };
-  }, 350);
+    frame.onload = () => {
+      // Brief delay lets the new screen paint (cached content renders on its
+      // defer script before `load`) before we uncover it. setTimeout fires
+      // reliably even if rAF is throttled.
+      setTimeout(reveal, 60);
+    };
+    // Safety net: reveal even if `load` never fires (e.g. cached 304 oddities).
+    revealFallbackTimer = setTimeout(reveal, 3000);
+    frame.src = src;
+  }, COVER_MS);
 }
+let revealFallbackTimer = null;
 
 // ═══════════════════════════════════════════════════════════════
 //  CAROUSEL

@@ -4,9 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=1080">
 <title>Foundry 1 — Carousel — Tournament Countdown</title>
+<link rel="stylesheet" href="tokens.css">
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-html, body { width: 1080px; height: 1920px; overflow: hidden; background: #000; }
+/* Off-black matches the foundry screens, so the brief blank iframe during a
+   reload is invisible rather than flashing behind the transition. */
+html, body { width: 1080px; height: 1920px; overflow: hidden; background: var(--off-black); }
 #screen-frame {
   position: absolute;
   inset: 0;
@@ -14,10 +17,29 @@ html, body { width: 1080px; height: 1920px; overflow: hidden; background: #000; 
   height: 1920px;
   border: none;
 }
+/* Transition cover — same off-black as the screens; faded in to mask the
+   iframe reload between carousel slides, then out once the next screen paints.
+   Sits below the goal overlay (z-index 100) so goals always show on top. */
+#transition-overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--off-black);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 90;
+  transition: opacity 0.4s ease;
+}
+#transition-overlay.fade-in  { opacity: 1; }
+#transition-overlay.fade-out { opacity: 0; }
 </style>
 </head>
 <body>
 <iframe id="screen-frame" src="screen-tournament-countdown-foundry.html" title="Foundry 1 screen"></iframe>
+<!-- Transition cover (off-black) — masks the iframe reload between slides. -->
+<div id="transition-overlay"></div>
+<!-- Goal overlay: hidden iframe shown on top of the live screen when a goal is
+     scored (driven by postMessage from the match-live screen). -->
+<iframe id="goal-frame" title="Goal overlay" style="display:none;position:absolute;inset:0;width:1080px;height:1920px;border:none;z-index:100;pointer-events:none;"></iframe>
 
 <script>
 // ── Foundry 1 controller ──────────────────────────────────────────────────
@@ -46,9 +68,17 @@ const PREKICKOFF_POLL_MS   = 5 * 1000;
 // as a fallback target for the pre-kickoff ramp if /api/upcoming is unreachable.
 const FIRST_MATCH_KICKOFF = Date.UTC(2026, 5, 11, 19, 0);
 
-// ── Carousel playlist (foundry-branded screens) ───────────────────────────
-const playlist = [
+// ── Carousel playlists (foundry-branded screens) ──────────────────────────
+// Pre-tournament: just the countdown. Once the tournament is underway (first
+// match has gone live, or the clock has passed kickoff) the office switches to
+// the Recently Completed → Matches Coming Up rotation. Will expand once more
+// matches have been played.
+const PRE_TOURNAMENT_PLAYLIST = [
   { src: 'screen-tournament-countdown-foundry.html', label: 'Tournament Countdown' },
+];
+const GROUP_STAGE_PLAYLIST = [
+  { src: 'screen-matchcomplete-foundry.html',  label: 'Recently Completed' },
+  { src: 'screen-comingup-two-foundry.html',   label: 'Matches Coming Up' },
 ];
 
 // ── State ─────────────────────────────────────────────────────────────────
@@ -60,25 +90,64 @@ let liveMode        = false;   // true while showing the foundry live screen
 let currentSrc      = null;    // last src loaded (dedup guard — keeps the live
                                // screen + its synth clock alive across re-polls)
 let nextKickoffEpoch = null;   // epoch (ms) of the next scheduled fixture, or null
+let firstMatchHasStarted = false; // latches once we ever detect a live match
+
+// The tournament is "underway" once the first match has gone live, or the clock
+// has passed the opener (fallback if we never catch a live poll).
+function activePlaylist() {
+  const started = firstMatchHasStarted || Date.now() >= FIRST_MATCH_KICKOFF;
+  return started ? GROUP_STAGE_PLAYLIST : PRE_TOURNAMENT_PLAYLIST;
+}
 
 // Navigate the iframe, deduping on src so an unchanged live screen isn't
 // reloaded (which would reset its match clock) on every poll.
+//
+// Smooth transition (mirrors index.html): cover with the off-black overlay,
+// swap the src only once the cover is fully opaque, and reveal only after the
+// new screen has loaded and painted — so carousel transitions don't flash.
+// Foundry screens render from localStorage on their `defer` script (before
+// `load`), so cached content is on-screen at reveal time.
+const transitionOverlay = document.getElementById('transition-overlay');
+let revealFallbackTimer = null;
+const COVER_MS = 400; // must match #transition-overlay CSS transition duration
 function goTo(src) {
   if (src === currentSrc) return;
   currentSrc = src;
-  frame.src = src;
+  transitionOverlay.classList.remove('fade-out');
+  transitionOverlay.classList.add('fade-in');
+  clearTimeout(revealFallbackTimer);
+  setTimeout(() => {
+    let revealed = false;
+    const reveal = () => {
+      if (revealed) return;
+      revealed = true;
+      clearTimeout(revealFallbackTimer);
+      transitionOverlay.classList.remove('fade-in');
+      transitionOverlay.classList.add('fade-out');
+    };
+    frame.onload = () => setTimeout(reveal, 60); // brief paint delay before uncovering
+    revealFallbackTimer = setTimeout(reveal, 3000); // safety if `load` never fires
+    frame.src = src;
+  }, COVER_MS);
 }
 
 // ── Carousel (idle) ───────────────────────────────────────────────────────
+// Re-reads activePlaylist() each tick so the pre-tournament → group-stage
+// switch is picked up even without a live match in between.
 function advance() {
-  carouselIndex = (carouselIndex + 1) % playlist.length;
-  goTo(playlist[carouselIndex].src);
+  const pl = activePlaylist();
+  carouselIndex = (carouselIndex + 1) % pl.length;
+  goTo(pl[carouselIndex].src);
 }
 function startCarousel() {
   if (liveMode) liveMode = false;
-  goTo(playlist[carouselIndex].src);
+  const pl = activePlaylist();
+  if (carouselIndex >= pl.length) carouselIndex = 0;
+  goTo(pl[carouselIndex].src);
+  // Always run the slide timer (even for a 1-screen playlist) so a phase change
+  // is re-evaluated on the next tick; goTo dedups so a static screen never reloads.
   clearInterval(carouselTimer);
-  carouselTimer = playlist.length > 1 ? setInterval(advance, SLIDE_DURATION_MS) : null;
+  carouselTimer = setInterval(advance, SLIDE_DURATION_MS);
 }
 
 // ── Live ──────────────────────────────────────────────────────────────────
@@ -141,6 +210,8 @@ async function checkLive() {
     count = 0;
   }
 
+  if (count > 0) firstMatchHasStarted = true; // latch: tournament is underway
+
   if (count >= 1) enterLive(fixtures);
   else if (liveMode || currentSrc === null) startCarousel();
 
@@ -150,6 +221,32 @@ async function checkLive() {
   }
 
   liveTimer = setTimeout(checkLive, nextPollDelay(count));
+}
+
+// ── Goal overlay ──────────────────────────────────────────────────────────
+// The foundry Match Live screen reuses js/match-live.js, which postMessages
+// { type:'GOAL', scorer } to its parent on a score change. Show screen-goal
+// full-screen over the live screen, then auto-hide — same as office-1/2.
+const goalFrame = document.getElementById('goal-frame');
+
+window.addEventListener('message', (e) => {
+  if (e.data?.type !== 'GOAL') return;
+  showGoalOverlay(e.data.scorer ?? '');
+});
+
+function showGoalOverlay(scorerText) {
+  if (!goalFrame.src || !goalFrame.src.includes('screen-goal.html')) {
+    goalFrame.src = 'screen-goal.html';
+    goalFrame.onload = () => {
+      goalFrame.style.display = 'block';
+      goalFrame.contentWindow?.triggerGoal?.(scorerText);
+    };
+  } else {
+    goalFrame.style.display = 'block';
+    goalFrame.contentWindow?.triggerGoal?.(scorerText);
+  }
+  // Auto-hide after 8.5s (matches the goal animation: 2.5s in + 5s hold + 0.8s out + 0.2s buffer).
+  setTimeout(() => { goalFrame.style.display = 'none'; }, 8500);
 }
 
 checkLive();
