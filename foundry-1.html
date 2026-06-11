@@ -91,6 +91,10 @@ let currentSrc      = null;    // last src loaded (dedup guard — keeps the liv
                                // screen + its synth clock alive across re-polls)
 let nextKickoffEpoch = null;   // epoch (ms) of the next scheduled fixture, or null
 let firstMatchHasStarted = false; // latches once we ever detect a live match
+// Consecutive empty /api/live polls to ride out before leaving a live match
+// (×10s ≈ 30s) — keeps the display on Match Live for the whole match.
+const LIVE_GRACE_POLLS = 3;
+let liveGracePolls = 0;
 
 // The tournament is "underway" once the first match has gone live, or the clock
 // has passed the opener (fallback if we never catch a live poll).
@@ -205,22 +209,35 @@ async function checkLive() {
     const data = await res.json();
     if (data.ok) { count = data.count || 0; fixtures = data.fixtures || []; }
   } catch (e) {
-    // Network/API down — fall back to the carousel rather than getting stuck
-    // on a stale live screen.
+    // Network/API blip — treated as an empty poll, but the grace window below
+    // keeps us on the live screen rather than bouncing to the carousel.
     count = 0;
   }
 
   if (count > 0) firstMatchHasStarted = true; // latch: tournament is underway
 
-  if (count >= 1) enterLive(fixtures);
-  else if (liveMode || currentSrc === null) startCarousel();
+  // Stay on Match Live for the WHOLE match. A single empty/failed /api/live poll
+  // must not bounce back to the carousel mid-match — only leave once several
+  // consecutive empty polls confirm the match is over.
+  let inGrace = false;
+  if (count >= 1) {
+    liveGracePolls = 0;
+    enterLive(fixtures);
+  } else if (liveMode && liveGracePolls < LIVE_GRACE_POLLS) {
+    liveGracePolls += 1;          // hold the live screen through the grace window
+    inGrace = true;
+  } else {
+    liveGracePolls = 0;
+    if (liveMode || currentSrc === null) startCarousel();
+  }
 
   // Keep the next-kickoff target fresh when idle (refresh if unknown or past).
-  if (count === 0 && (nextKickoffEpoch == null || nextKickoffEpoch <= Date.now())) {
+  if (count === 0 && !inGrace && (nextKickoffEpoch == null || nextKickoffEpoch <= Date.now())) {
     await refreshNextKickoff();
   }
 
-  liveTimer = setTimeout(checkLive, nextPollDelay(count));
+  // Poll fast while a match is live or during the grace window (to re-confirm).
+  liveTimer = setTimeout(checkLive, (count > 0 || inGrace) ? LIVE_POLL_MS : nextPollDelay(count));
 }
 
 // ── Goal overlay ──────────────────────────────────────────────────────────

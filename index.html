@@ -321,6 +321,11 @@ let slideDuration     = SLIDE_MS;
 // Live state machine: 'none' (carousel rotating) | 'single' | 'pair'.
 let liveMode  = 'none';
 let liveTimer = null;
+// Number of consecutive empty /api/live polls to ride out before leaving a live
+// match for the carousel (×10s ≈ 30s) — guards against transient API blips so
+// the display stays on Match Live for the whole match.
+const LIVE_GRACE_POLLS = 3;
+let liveGracePolls = 0;
 
 // Epoch (ms) of the next scheduled WC fixture's kickoff, or null if unknown.
 // Drives the pre-kickoff polling ramp (see nextPollDelay / refreshNextKickoff).
@@ -640,25 +645,39 @@ async function checkLive() {
     const data = await res.json();
     if (data.ok) { count = data.count || 0; fixtures = data.fixtures || []; }
   } catch (e) {
-    // Network/API down — fall back to the carousel rather than getting
-    // stuck on a stale live screen.
+    // Network/API blip — treated as an empty poll, but the grace window below
+    // keeps us on the live screen rather than bouncing to the carousel.
     count = 0;
   }
 
   if (count > 0) firstMatchHasStarted = true;
 
-  if (count >= 2)       enterPairMode(fixtures);
-  else if (count === 1) enterSingleMode();
-  else                  enterCarouselMode();
+  // Stay on Match Live for the WHOLE match. A single empty/failed /api/live poll
+  // (network blip or the ~15s api-football refresh gap) must not bounce the
+  // display back to the carousel mid-match — only leave once several consecutive
+  // empty polls confirm the match is actually over.
+  let inGrace = false;
+  if (count >= 1) {
+    liveGracePolls = 0;
+    if (count >= 2) enterPairMode(fixtures);
+    else            enterSingleMode();
+  } else if (liveMode !== 'none' && liveGracePolls < LIVE_GRACE_POLLS) {
+    liveGracePolls += 1;          // hold the live screen through the grace window
+    inGrace = true;
+  } else {
+    liveGracePolls = 0;
+    enterCarouselMode();
+  }
 
   // When idle, keep the next-kickoff target fresh — refresh if we don't know it
   // yet, or the one we had has passed (e.g. a match just ended → roll to the
-  // next fixture). Skipped while a match is live (count drives 10 s polling).
-  if (count === 0 && (nextKickoffEpoch == null || nextKickoffEpoch <= Date.now())) {
+  // next fixture). Skipped while live or holding the live screen.
+  if (count === 0 && !inGrace && (nextKickoffEpoch == null || nextKickoffEpoch <= Date.now())) {
     await refreshNextKickoff();
   }
 
-  liveTimer = setTimeout(checkLive, nextPollDelay(count));
+  // Poll fast while a match is live or during the grace window (to re-confirm).
+  liveTimer = setTimeout(checkLive, (count > 0 || inGrace) ? LIVE_POLL_MS : nextPollDelay(count));
 }
 
 // ═══════════════════════════════════════════════════════════════
