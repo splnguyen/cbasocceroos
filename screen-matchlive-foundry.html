@@ -17,8 +17,10 @@ html,body{
   color:var(--white);
 }
 .screen{
-  width:1080px;height:1920px;padding:60px;
-  display:flex;flex-direction:column;gap:79px;
+  /* Foundry rhythm (Figma 2048-6165): tighter ~50px gaps. Top padding 160px
+     matches the foundry countdown so titles align across the carousel. */
+  width:1080px;height:1920px;padding:160px 60px 60px;
+  display:flex;flex-direction:column;gap:50px;
   overflow:hidden;
 }
 /* Trim font leading so the new fixed heights match the Figma cap-height boxes */
@@ -28,7 +30,7 @@ html,body{
 }
 
 /* ── Header ── */
-.header-block{display:flex;flex-direction:column;gap:60px;flex-shrink:0;}
+.header-block{display:flex;flex-direction:column;gap:40px;flex-shrink:0;}
 .top-row{display:flex;align-items:flex-start;justify-content:space-between;}
 .page-title{
   font-size:64px;font-weight:800;line-height:68px;letter-spacing:3.2px;
@@ -103,7 +105,7 @@ html,body{
 }
 
 /* ── Rolling match feed wrapper (poss + stats + feed) ── */
-.rolling-feed{display:flex;flex-direction:column;gap:60px;flex-shrink:0;}
+.rolling-feed{display:flex;flex-direction:column;gap:36px;flex-shrink:0;}
 
 /* ── Possession bar (large = single, small = pair) ── */
 .poss-wrap{display:flex;flex-direction:column;gap:20px;flex-shrink:0;}
@@ -156,7 +158,8 @@ html,body{
   background:var(--charcoal);border-radius:10px;
   padding:24px 24px 8px;
   display:flex;flex-direction:column;gap:24px;
-  height:408px;overflow:hidden;flex-shrink:0;
+  /* 3 rows (matches the Figma) instead of 4 — see body[data-feed-limit]. */
+  height:308px;overflow:hidden;flex-shrink:0;
 }
 .feed-item{
   height:76px;                                  /* Figma h-152 ÷2 */
@@ -225,7 +228,7 @@ html,body{
 }
 #api-status{max-width:520px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 </style>
-</head><body>
+</head><body data-feed-limit="3">
 <div class="screen">
   <div class="header-block">
     <div class="top-row">

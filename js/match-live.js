@@ -122,7 +122,9 @@
     if (!feed) return;
     // Most-recent N events. Single feed-card is a fixed 408px (4 rows of 76px);
     // pair has a tighter vertical budget → 3 rows.
-    const limit = isPair ? 3 : 4;
+    // Single screen shows 4 rows by default; a screen can request fewer via
+    // body[data-feed-limit] (the foundry layout uses 3 to match its design).
+    const limit = isPair ? 3 : (Number(document.body.dataset.feedLimit) || 4);
     const recent = [...(events || [])].reverse().slice(0, limit);
     feed.innerHTML = recent.map((ev, i) => {
       const side = eventSide(ev);
