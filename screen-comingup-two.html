@@ -18,11 +18,18 @@ html,body{
   color:var(--white);
 }
 .screen{
+  /* Figma 770-994: p-120 / gap-158 ÷2 → padding 60, 79px between blocks. */
   width:1080px;height:1920px;padding:60px;
-  display:flex;flex-direction:column;gap:30px;
+  display:flex;flex-direction:column;gap:79px;
   overflow:hidden;
 }
-.header-block{display:flex;flex-direction:column;gap:40px;flex-shrink:0;}
+/* Cap-trim leading so the large type matches the Figma cap-height boxes and the
+   whole layout still fits 1920. */
+.page-title,.meta-row,.cd-label,.cd-clock,.cd-kickoff,
+.team-name-lg,.team-name-md,.vs-big,.vs-mid,.secondary-date{
+  text-box-trim:trim-both;text-box-edge:cap alphabetic;
+}
+.header-block{display:flex;flex-direction:column;gap:60px;flex-shrink:0;}
 .top-row{display:flex;align-items:flex-start;justify-content:space-between;}
 .page-title{
   font-size:64px;font-weight:800;line-height:68px;letter-spacing:3.2px;
@@ -34,33 +41,32 @@ html,body{
   padding:16px;border-radius:6px;
   white-space:nowrap;flex-shrink:0;
 }
-.header-sub{display:flex;flex-direction:column;gap:16px;}
+.header-sub{display:flex;flex-direction:column;gap:20px;}
 .div-thick{width:100%;height:16px;background:var(--white);flex-shrink:0;}
 .meta-row{
   font-size:48px;font-weight:800;letter-spacing:2.4px;
+  color:var(--brand-yellow);
   display:flex;justify-content:space-between;align-items:baseline;gap:24px;
 }
 
-.meta-row{color:var(--brand-yellow);}
-
-.cd-block{display:flex;flex-direction:column;gap:14px;align-items:center;flex-shrink:0;}
-.cd-label{font-size:28px;font-weight:700;letter-spacing:2.8px;color:var(--brand-yellow);text-transform:uppercase;text-align:center;}
-.cd-clock{font-size:120px;font-weight:800;line-height:1;letter-spacing:6px;color:var(--brand-yellow);text-align:center;font-variant-numeric:tabular-nums;}
-.cd-kickoff{font-size:26px;font-weight:800;letter-spacing:2.6px;color:var(--brand-yellow);text-transform:uppercase;text-align:center;}
+.cd-block{display:flex;flex-direction:column;gap:30px;align-items:center;flex-shrink:0;}
+.cd-label{font-size:32px;font-weight:700;letter-spacing:3.2px;color:var(--brand-yellow);text-transform:uppercase;text-align:center;}
+.cd-clock{font-size:160px;font-weight:800;line-height:0.8;letter-spacing:8px;color:var(--brand-yellow);text-align:center;font-variant-numeric:tabular-nums;}
+.cd-kickoff{font-size:32px;font-weight:800;letter-spacing:3.2px;color:var(--brand-yellow);text-transform:uppercase;text-align:center;}
 
 .match-primary{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-shrink:0;}
-.match-secondary{display:flex;align-items:center;justify-content:center;gap:24px;flex-shrink:0;}
-.team-col{display:flex;flex-direction:column;align-items:center;gap:14px;flex:1;min-width:0;}
-.flag-circle-lg{width:210px;height:210px;border-radius:50%;overflow:hidden;background:#444;flex-shrink:0;}
-.flag-circle-md{width:130px;height:130px;border-radius:50%;overflow:hidden;background:#444;flex-shrink:0;}
+.match-secondary{display:flex;align-items:center;justify-content:center;gap:40px;flex-shrink:0;}
+.team-col{display:flex;flex-direction:column;align-items:center;gap:30px;flex:1;min-width:0;}
+.flag-circle-lg{width:367px;height:367px;border-radius:50%;overflow:hidden;background:#444;flex-shrink:0;}
+.flag-circle-md{width:250px;height:250px;border-radius:50%;overflow:hidden;background:#444;flex-shrink:0;}
 .flag-circle-lg img,.flag-circle-md img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
-.team-name-lg{font-size:38px;font-weight:800;color:var(--white);text-transform:uppercase;text-align:center;white-space:nowrap;}
-.team-name-md{font-size:30px;font-weight:800;color:var(--white);text-transform:uppercase;text-align:center;white-space:nowrap;}
-.vs-big{font-size:42px;font-weight:700;letter-spacing:4px;color:var(--white);text-transform:uppercase;flex-shrink:0;width:60px;text-align:center;}
-.vs-mid{font-size:30px;font-weight:700;letter-spacing:3px;color:var(--white);text-transform:uppercase;flex-shrink:0;width:50px;text-align:center;}
+.team-name-lg{font-size:48px;font-weight:800;letter-spacing:2.4px;color:var(--white);text-transform:uppercase;text-align:center;white-space:nowrap;}
+.team-name-md{font-size:42px;font-weight:800;color:var(--white);text-transform:uppercase;text-align:center;white-space:nowrap;}
+.vs-big{font-size:48px;font-weight:700;letter-spacing:5.28px;color:var(--white);text-transform:uppercase;flex-shrink:0;width:84.5px;text-align:center;}
+.vs-mid{font-size:48px;font-weight:700;letter-spacing:5.28px;color:var(--white);text-transform:uppercase;flex-shrink:0;width:84.5px;text-align:center;}
 
-.secondary-block{display:flex;flex-direction:column;gap:16px;flex-shrink:0;}
-.secondary-date{font-size:26px;font-weight:800;letter-spacing:2.6px;color:var(--white);text-transform:uppercase;text-align:center;}
+.secondary-block{display:flex;flex-direction:column;gap:79px;flex-shrink:0;}
+.secondary-date{font-size:32px;font-weight:800;letter-spacing:3.2px;color:var(--white);text-transform:uppercase;text-align:center;}
 </style>
 </head><body>
 <div class="screen">
