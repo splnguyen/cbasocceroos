@@ -253,14 +253,14 @@ function triggerGoal(scorerText) {
   // Entrance
   overlay.classList.add('playing');
 
-  // Hold ~5s after everything is in, then fade out.
+  // Hold ~8.8s after everything is in, then fade out.
   goalTimer = setTimeout(() => {
     overlay.classList.remove('playing');
     overlay.classList.add('leaving');
     goalTimer = setTimeout(() => {
       overlay.className = 'goal-overlay';
     }, 800);
-  }, 7500);
+  }, 11000);
 }
 
 // Hide the dev controls when embedded (the overlay over a live screen, or the

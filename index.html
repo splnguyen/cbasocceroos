@@ -534,11 +534,11 @@ function showGoalOverlay(scorerText) {
     goalFrame.style.display = 'block';
     goalFrame.contentWindow?.triggerGoal?.(scorerText);
   }
-  // Auto-hide after 8.5s (matches the goal animation total: 2.5s in + 5s hold + 0.8s out + 0.2s buffer)
+  // Auto-hide after 12s (matches the goal animation total: ~2.2s in + ~8.8s hold + 0.8s out + 0.2s buffer)
   goalHideTimer = setTimeout(() => {
     goalFrame.style.display = 'none';
     frame.style.opacity = '1'; // restore the live screen
-  }, 8500);
+  }, 12000);
 }
 
 // ═══════════════════════════════════════════════════════════════

@@ -130,7 +130,6 @@
   const seenEventKeys = new Set();
   let tickerFixtureId = null;
   let lastPossEmitted = null;
-  let lastXgEmitted = [0, 0];
   let feedSeq = 0;                  // unique id per feed item (for enter animation)
   let renderedFeedIds = new Set();  // ids currently in the DOM, to detect new rows
   const TICKER_MAX = 40;
@@ -157,20 +156,28 @@
     if (state.fixtureId !== tickerFixtureId) {
       tickerFixtureId = state.fixtureId;
       liveFeed = []; prevStats = null; seenEventKeys.clear();
-      lastPossEmitted = null; lastXgEmitted = [0, 0]; renderedFeedIds = new Set();
+      lastPossEmitted = null; renderedFeedIds = new Set();
     }
 
     const fresh = []; // new items this poll, oldest → newest
     const min = `${state.elapsed ?? 0}${state.extra ? `+${state.extra}` : ''}'`;
-    const teamName = (i) => ((i === 0 ? state.home.name : state.away.name) || '').toUpperCase();
+    const teamName = (i) => (i === 0 ? state.home.name : state.away.name) || ''; // title case (as the API gives it)
 
-    // 1. New real events (Goal / Card / Sub / VAR).
+    // 1. New real events (Goal / Card / Sub / VAR) — these carry a team flag.
     for (const ev of (state.events || [])) {
       const key = eventKey(ev);
       if (seenEventKeys.has(key)) continue;
       seenEventKeys.add(key);
+      const team = ev.team?.id === homeId ? state.home : state.away;
+      const label = eventLabel(ev);
+      let desc = eventDesc(ev);
+      // Drop the white second line if it's empty or just repeats the yellow label
+      // (e.g. a Yellow Card whose detail is also "Yellow Card") — the row then
+      // hugs to a single line.
+      if (desc && desc.trim().toLowerCase() === label.trim().toLowerCase()) desc = '';
       fresh.push({ kind: 'real', goal: ev.type === 'Goal', side: eventSide(ev), min: eventMinute(ev),
-        type: eventLabel(ev), who: ev.player?.name ?? '–', desc: eventDesc(ev) });
+        type: label, who: ev.player?.name ?? '–', desc,
+        flagName: team?.name, flagLogo: team?.logo });
     }
 
     // 2. Synthetic stat-derived movement (only after a baseline snapshot).
@@ -192,10 +199,6 @@
         for (let k = 0; k < saves;     k++) push(side, 'Save', name);
         for (let k = 0; k < fouls;     k++) push(side, 'Foul', name);
         for (let k = 0; k < offs;      k++) push(side, 'Offside', name);
-        if (cur.xg[i] - lastXgEmitted[i] >= 0.15) { // notable xG rise
-          lastXgEmitted[i] = cur.xg[i];
-          push(side, 'xG', `${name} ${cur.xg[i].toFixed(2)}`);
-        }
       }
       // Possession swing (≥4% from the last one we announced).
       if (Math.abs(cur.poss - lastPossEmitted) >= 4) {
@@ -205,9 +208,8 @@
           `${teamName(homeLead ? 0 : 1)} ${homeLead ? cur.poss : 100 - cur.poss}%`);
       }
     } else {
-      // Seed thresholds from the first snapshot so poll #2 doesn't dump a catch-up burst.
+      // Seed the possession baseline so poll #2 doesn't announce a catch-up swing.
       lastPossEmitted = cur.poss;
-      lastXgEmitted = [cur.xg[0], cur.xg[1]];
     }
     prevStats = cur;
 
@@ -218,15 +220,28 @@
   }
 
   function feedRowHtml(it, isLast, enter) {
+    // Real events (goals/cards/subs/VAR) carry a team flag avatar; synthetic
+    // ticker rows do not.
+    const flag = it.kind === 'real' ? '<span class="feed-flag"><img alt=""></span>' : '';
     return `
       <div class="feed-item${isLast ? ' last' : ''}${it.kind === 'stat' ? ' stat' : ''}${enter ? ' enter' : ''}">
         <div class="feed-top">
           <span class="feed-min">${it.min}</span>
           <span class="feed-type ${it.side || ''}">${it.type}</span>
+          ${flag}
           <span class="feed-player ${it.side || ''}">${it.who}</span>
         </div>
-        <div class="feed-desc">${it.desc || ''}</div>
+        ${it.desc ? `<div class="feed-desc">${it.desc}</div>` : ''}
       </div>`;
+  }
+
+  // After a feed render, point each real event's flag avatar at its team.
+  function applyFeedFlags(feed, items) {
+    items.forEach((it, i) => {
+      if (it.kind !== 'real') return;
+      const img = feed.children[i] && feed.children[i].querySelector('.feed-flag img');
+      if (img) setFlag(img, it.flagName, it.flagLogo);
+    });
   }
 
   function renderFeed() {
@@ -248,6 +263,7 @@
       const o = others.slice(0, Math.max(0, 3 - g.length));
       const recent = [...g, ...o].sort((a, b) => liveFeed.indexOf(a) - liveFeed.indexOf(b));
       feed.innerHTML = recent.map((it, i) => feedRowHtml(it, i === recent.length - 1, !renderedFeedIds.has(it.id))).join('');
+      applyFeedFlags(feed, recent);
       renderedFeedIds = new Set(recent.map((it) => it.id));
       return;
     }
@@ -276,6 +292,7 @@
     feed.innerHTML = finalItems
       .map((it, i) => feedRowHtml(it, i === finalItems.length - 1, !renderedFeedIds.has(it.id)))
       .join('');
+    applyFeedFlags(feed, finalItems);
     renderedFeedIds = new Set(finalItems.map((it) => it.id));
   }
 
