@@ -16,60 +16,9 @@
   --gold: var(--color-brand-yellow);
   --white:var(--color-white);
 }
-html,body{width:1080px;height:1920px;overflow:hidden;background:var(--bg);font-family:'CBABeaconSans',sans-serif;color:var(--white);}
-
-/* ── BACKGROUND SCREEN (dimmed to opacity 0.2) ── */
-.bg-screen{
-  position:absolute;inset:0;
-  padding:60px;
-  display:flex;flex-direction:column;gap:40px;
-  opacity:0.2;
-  pointer-events:none;
-}
-/* Header */
-.bg-title{font-size:64px;font-weight:800;line-height:68px;letter-spacing:3.2px;}
-.bg-top{display:flex;justify-content:space-between;align-items:flex-start;}
-.bg-live{background:#fff;display:flex;align-items:center;gap:12px;padding:16px;border-radius:6px;}
-.bg-dot{width:12px;height:12px;border-radius:50%;background:var(--color-red-bright);}
-.bg-live-lbl{font-size:24px;font-weight:800;letter-spacing:1.2px;color:var(--color-red-bright);}
-.bg-div{width:100%;height:3px;background:#fff;}
-.bg-meta{display:flex;justify-content:space-between;font-size:48px;font-weight:800;letter-spacing:2.4px;padding:20px 0;}
-/* Scores */
-.bg-scores{display:flex;align-items:flex-start;justify-content:center;padding:0 60px;}
-.bg-tcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:30px;}
-.bg-score{font-size:300px;font-weight:800;line-height:0.9;}
-.bg-score.home{color:var(--color-white);}
-.bg-score.away{color:var(--color-mid-grey);}
-.bg-flag{width:150px;height:150px;border-radius:50%;background:#555;}
-.bg-tname{font-size:42px;font-weight:800;text-transform:uppercase;text-align:center;}
-.bg-tname.home{color:var(--color-white);}
-.bg-tname.away{color:var(--color-mid-grey);}
-.bg-ccol{width:260px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;align-self:stretch;}
-.bg-vseg{flex:1;width:2px;background:#555;}
-.bg-clock{font-size:60px;font-weight:800;text-align:center;padding:20px 0;}
-.bg-period{font-size:40px;font-weight:400;text-align:center;}
-/* Possession bar */
-.bg-poss{display:flex;flex-direction:column;gap:14px;}
-.bg-poss-lbl{font-size:24px;font-weight:800;text-transform:uppercase;text-align:center;}
-.bg-poss-row{display:flex;align-items:center;gap:16px;}
-.bg-poss-pct{font-size:24px;font-weight:800;min-width:56px;}
-.bg-poss-pct.home{color:var(--color-white);}
-.bg-poss-pct.away{color:var(--color-mid-grey);}
-.bg-poss-bar{flex:1;height:24px;border-radius:10px;overflow:hidden;display:flex;}
-.bg-poss-fill{background:var(--color-white);border-radius:10px 0 0 10px;}
-.bg-poss-rest{background:var(--color-mid-grey);flex:1;border-radius:0 10px 10px 0;}
-/* Stat cards */
-.bg-stats{display:flex;gap:16px;height:120px;}
-.bg-stat{background:var(--color-charcoal);border-radius:10px;flex:1;padding:16px;display:flex;flex-direction:column;gap:12px;justify-content:center;}
-.bg-slbl{font-size:16px;font-weight:800;text-transform:uppercase;text-align:center;}
-.bg-svals{display:flex;justify-content:space-between;}
-.bg-sval{font-size:42px;font-weight:800;}
-.bg-sval.home{color:var(--color-white);}
-.bg-sval.away{color:var(--color-mid-grey);}
-/* Events */
-.bg-feed{background:var(--color-charcoal);border-radius:10px;padding:16px;flex:1;overflow:hidden;}
-.bg-erow{padding:10px 0;border-bottom:1px solid var(--color-dark-grey);font-size:24px;font-weight:800;display:flex;gap:16px;}
-.bg-erow:last-child{border-bottom:none;}
+/* Transparent so the goal overlay composites directly over the live screen
+   beneath it (this page is loaded into a pointer-events:none overlay iframe). */
+html,body{width:1080px;height:1920px;overflow:hidden;background:transparent;font-family:'CBABeaconSans',sans-serif;color:var(--white);}
 
 /* ── GOAL OVERLAY ── */
 .goal-overlay{
@@ -228,60 +177,7 @@ function flagImg(name,size,extra,greyscale){const svg=getFlagSVG(name)||'';const
 </script>
 </head><body>
 
-<!-- ── DIMMED BACKGROUND (matchlive content at opacity 0.2) ── -->
-<div class="bg-screen">
-  <div class="bg-top">
-    <div class="bg-title">Now<br>Playing</div>
-    <div class="bg-live"><div class="bg-dot"></div><div class="bg-live-lbl">LIVE</div></div>
-  </div>
-  <div class="bg-div"></div>
-  <div class="bg-meta"><span>Group B</span><span style="font-weight:400;">Los Angeles</span></div>
-  <div class="bg-div"></div>
-  <div class="bg-scores">
-    <div class="bg-tcol">
-      <div class="bg-score home">4</div>
-      <div class="bg-flag"></div>
-      <div class="bg-tname home">Australia</div>
-    </div>
-    <div class="bg-ccol">
-      <div class="bg-vseg"></div>
-      <div style="padding:20px 0;"><div class="bg-clock">64:54</div><div class="bg-period">Second Half</div></div>
-      <div class="bg-vseg"></div>
-    </div>
-    <div class="bg-tcol">
-      <div class="bg-score away">3</div>
-      <div class="bg-flag"></div>
-      <div class="bg-tname away">France</div>
-    </div>
-  </div>
-  <div class="bg-div"></div>
-  <div class="bg-poss">
-    <div class="bg-poss-lbl">POSSESSION</div>
-    <div class="bg-poss-row">
-      <div class="bg-poss-pct home">42%</div>
-      <div class="bg-poss-bar">
-        <div class="bg-poss-fill" style="width:42%"></div>
-        <div class="bg-poss-rest"></div>
-      </div>
-      <div class="bg-poss-pct away">58%</div>
-    </div>
-  </div>
-  <div class="bg-stats">
-    <div class="bg-stat"><div class="bg-slbl">SHOTS</div><div class="bg-svals"><span class="bg-sval home">14</span><span class="bg-sval away">20</span></div></div>
-    <div class="bg-stat"><div class="bg-slbl">ON TARGET</div><div class="bg-svals"><span class="bg-sval home">6</span><span class="bg-sval away">8</span></div></div>
-    <div class="bg-stat"><div class="bg-slbl">CORNERS</div><div class="bg-svals"><span class="bg-sval home">5</span><span class="bg-sval away">9</span></div></div>
-    <div class="bg-stat"><div class="bg-slbl">FOULS</div><div class="bg-svals"><span class="bg-sval home">13</span><span class="bg-sval away">12</span></div></div>
-  </div>
-  <div class="bg-feed">
-    <div class="bg-erow"><span style="color:#aaa;width:80px;">108'</span><span style="color:var(--color-brand-yellow);">GOAL</span><span style="flex:1;text-align:right;color:var(--color-white);">Messi</span></div>
-    <div class="bg-erow"><span style="color:#aaa;width:80px;">90'</span><span style="color:var(--color-brand-yellow);">GOAL</span><span style="flex:1;text-align:right;color:var(--color-mid-grey);">Mbappé</span></div>
-    <div class="bg-erow"><span style="color:#aaa;width:80px;">89'</span><span style="color:var(--color-brand-yellow);">Yellow</span><span style="flex:1;text-align:right;color:var(--color-white);">Montiel</span></div>
-    <div class="bg-erow"><span style="color:#aaa;width:80px;">43'</span><span style="color:var(--color-brand-yellow);">GOAL</span><span style="flex:1;text-align:right;color:var(--color-mid-grey);">Mbappé</span></div>
-    <div class="bg-erow"><span style="color:#aaa;width:80px;">36'</span><span style="color:var(--color-brand-yellow);">GOAL</span><span style="flex:1;text-align:right;color:var(--color-white);">Messi</span></div>
-  </div>
-</div>
-
-<!-- ── GOAL OVERLAY ── -->
+<!-- ── GOAL OVERLAY (transparent — composites over the live screen) ── -->
 <div class="goal-overlay" id="goal-overlay">
   <div class="goal-confetti" id="goal-confetti"></div>
   <div class="goal-word" id="goal-word"><span style="--d:0s">G</span><span style="--d:0.08s">o</span><span style="--d:0.16s">a</span><span style="--d:0.24s">l</span><span style="--d:0.32s">!</span></div>
@@ -340,7 +236,9 @@ function spawnConfetti() {
   }
 }
 
+let goalTriggered = false; // set once any goal (real or demo) has fired
 function triggerGoal(scorerText) {
+  goalTriggered = true;
   if (goalTimer)   { clearTimeout(goalTimer);   goalTimer   = null; }
   if (settleTimer) { clearTimeout(settleTimer); settleTimer = null; }
 
@@ -365,14 +263,22 @@ function triggerGoal(scorerText) {
   }, 7500);
 }
 
+// Hide the dev controls when embedded (the overlay over a live screen, or the
+// preview tool) — they're only for opening screen-goal.html standalone.
+if (window.self !== window.top) {
+  const devBar = document.getElementById('dev-bar');
+  if (devBar) devBar.style.display = 'none';
+}
+
 // Dev button
 document.getElementById('trigger-btn').addEventListener('click', () => {
-  const text = document.getElementById('scorer-input').value;
-  triggerGoal(text);
+  triggerGoal(document.getElementById('scorer-input').value);
 });
 
-// Auto-trigger on load for preview
-setTimeout(() => triggerGoal('Messi scores for Argentina'), 600);
+// Auto-demo the animation on load — but skip it if a real goal has already been
+// triggered (e.g. the live screen's parent called triggerGoal on load), so we
+// never replay a spurious goal over the live screen.
+setTimeout(() => { if (!goalTriggered) triggerGoal('Messi scores for Argentina'); }, 600);
 
 // Expose globally for use in matchlive.js
 window.triggerGoal = triggerGoal;

@@ -154,6 +154,18 @@ html,body{
   border-bottom:1px solid var(--dark-grey);
 }
 .feed-item.last{border-bottom:none;padding-bottom:0;}
+/* Synthetic live-ticker rows (shots/corners/saves/fouls/possession/xG) — muted
+   so they read as live-stat updates, not confirmed goal/card events. */
+.feed-item.stat{opacity:0.78;height:auto;gap:0;padding-bottom:12px;}
+.feed-item.stat .feed-top{color:var(--white);font-weight:700;}
+.feed-item.stat .feed-desc{display:none;} /* no second line → shorter row, more fit */
+/* ── Live transitions ── */
+/* A changed number eases in (slide up + fade); .bump is re-applied on change. */
+@keyframes numBump  { from { opacity:0; transform:translateY(14px); } }
+.bump { animation: numBump 0.38s cubic-bezier(.22,.61,.36,1); }
+/* New feed rows ease in from the bottom. */
+@keyframes feedEnter { from { opacity:0; transform:translateY(18px); } }
+.feed-item.enter { animation: feedEnter 0.38s cubic-bezier(.22,.61,.36,1); }
 .feed-top{
   display:flex;align-items:center;line-height:0.7;  /* cap-trim: flex box won't honour text-box-trim */
   font-size:30px;font-weight:800;letter-spacing:2.4px;

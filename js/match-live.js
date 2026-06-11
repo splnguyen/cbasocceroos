@@ -117,28 +117,166 @@
     return `${m}${x}'`;
   }
 
-  function renderFeed(events) {
+  // ── Live ticker ───────────────────────────────────────────────────────────
+  // api-football's events endpoint only carries goals/cards/subs/VAR, so during
+  // open play the feed would barely move. We synthesise extra "movement" by
+  // diffing the live STATISTICS each poll (shots, on-target, corners, saves,
+  // fouls, offsides, possession swings, xG) and injecting derived ticker items.
+  // These are styled subtly (.stat) to read as live-stat updates rather than
+  // confirmed goal/card events. `liveFeed` is a single newest-first stream of
+  // real + synthetic items, in the order they were detected.
+  let liveFeed = [];
+  let prevStats = null;
+  const seenEventKeys = new Set();
+  let tickerFixtureId = null;
+  let lastPossEmitted = null;
+  let lastXgEmitted = [0, 0];
+  let feedSeq = 0;                  // unique id per feed item (for enter animation)
+  let renderedFeedIds = new Set();  // ids currently in the DOM, to detect new rows
+  const TICKER_MAX = 40;
+
+  function eventKey(ev) {
+    return [ev.time?.elapsed, ev.time?.extra, ev.type, ev.detail, ev.team?.id, ev.player?.name].join('|');
+  }
+  function statSnapshot(state) {
+    const xg = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
+    return {
+      shots:    state.shots    || [0, 0],
+      target:   state.target   || [0, 0],
+      corners:  state.corners  || [0, 0],
+      saves:    state.saves    || [0, 0],
+      fouls:    state.fouls    || [0, 0],
+      offsides: state.offsides || [0, 0],
+      poss:     Number.isFinite(state.possH) ? state.possH : 50,
+      xg:       [xg(state.xg?.[0]), xg(state.xg?.[1])],
+    };
+  }
+
+  function updateTicker(state) {
+    // Reset the ticker when the fixture changes.
+    if (state.fixtureId !== tickerFixtureId) {
+      tickerFixtureId = state.fixtureId;
+      liveFeed = []; prevStats = null; seenEventKeys.clear();
+      lastPossEmitted = null; lastXgEmitted = [0, 0]; renderedFeedIds = new Set();
+    }
+
+    const fresh = []; // new items this poll, oldest → newest
+    const min = `${state.elapsed ?? 0}${state.extra ? `+${state.extra}` : ''}'`;
+    const teamName = (i) => ((i === 0 ? state.home.name : state.away.name) || '').toUpperCase();
+
+    // 1. New real events (Goal / Card / Sub / VAR).
+    for (const ev of (state.events || [])) {
+      const key = eventKey(ev);
+      if (seenEventKeys.has(key)) continue;
+      seenEventKeys.add(key);
+      fresh.push({ kind: 'real', goal: ev.type === 'Goal', side: eventSide(ev), min: eventMinute(ev),
+        type: eventLabel(ev), who: ev.player?.name ?? '–', desc: eventDesc(ev) });
+    }
+
+    // 2. Synthetic stat-derived movement (only after a baseline snapshot).
+    const cur = statSnapshot(state);
+    if (prevStats) {
+      const push = (side, type, who) => fresh.push({ kind: 'stat', side, min, type, who, desc: '' });
+      const cap = (n) => Math.min(Math.max(0, n), 3); // guard a big jump after a gap
+      for (const [side, i] of [['home', 0], ['away', 1]]) {
+        const onTarget  = cap(cur.target[i]   - prevStats.target[i]);
+        const offTarget = cap((cur.shots[i] - prevStats.shots[i]) - (cur.target[i] - prevStats.target[i]));
+        const corners   = cap(cur.corners[i]  - prevStats.corners[i]);
+        const saves     = cap(cur.saves[i]    - prevStats.saves[i]);
+        const fouls     = cap(cur.fouls[i]     - prevStats.fouls[i]);
+        const offs      = cap(cur.offsides[i] - prevStats.offsides[i]);
+        const name = teamName(i);
+        for (let k = 0; k < onTarget;  k++) push(side, 'Shot on Target', name);
+        for (let k = 0; k < offTarget; k++) push(side, 'Shot', name);
+        for (let k = 0; k < corners;   k++) push(side, 'Corner', name);
+        for (let k = 0; k < saves;     k++) push(side, 'Save', name);
+        for (let k = 0; k < fouls;     k++) push(side, 'Foul', name);
+        for (let k = 0; k < offs;      k++) push(side, 'Offside', name);
+        if (cur.xg[i] - lastXgEmitted[i] >= 0.15) { // notable xG rise
+          lastXgEmitted[i] = cur.xg[i];
+          push(side, 'xG', `${name} ${cur.xg[i].toFixed(2)}`);
+        }
+      }
+      // Possession swing (≥4% from the last one we announced).
+      if (Math.abs(cur.poss - lastPossEmitted) >= 4) {
+        lastPossEmitted = cur.poss;
+        const homeLead = cur.poss >= 50;
+        push(homeLead ? 'home' : 'away', 'Possession',
+          `${teamName(homeLead ? 0 : 1)} ${homeLead ? cur.poss : 100 - cur.poss}%`);
+      }
+    } else {
+      // Seed thresholds from the first snapshot so poll #2 doesn't dump a catch-up burst.
+      lastPossEmitted = cur.poss;
+      lastXgEmitted = [cur.xg[0], cur.xg[1]];
+    }
+    prevStats = cur;
+
+    if (fresh.length) {
+      for (const it of fresh) it.id = ++feedSeq; // stable id so new rows can animate in
+      liveFeed = [...fresh.reverse(), ...liveFeed].slice(0, TICKER_MAX);
+    }
+  }
+
+  function feedRowHtml(it, isLast, enter) {
+    return `
+      <div class="feed-item${isLast ? ' last' : ''}${it.kind === 'stat' ? ' stat' : ''}${enter ? ' enter' : ''}">
+        <div class="feed-top">
+          <span class="feed-min">${it.min}</span>
+          <span class="feed-type ${it.side || ''}">${it.type}</span>
+          <span class="feed-player ${it.side || ''}">${it.who}</span>
+        </div>
+        <div class="feed-desc">${it.desc || ''}</div>
+      </div>`;
+  }
+
+  function renderFeed() {
     const feed = $('feed-card');
     if (!feed) return;
-    // Most-recent N events. Single feed-card is a fixed 408px (4 rows of 76px);
-    // pair has a tighter vertical budget → 3 rows.
-    // Single screen shows 4 rows by default; a screen can request fewer via
-    // body[data-feed-limit] (the foundry layout uses 3 to match its design).
-    const limit = isPair ? 3 : (Number(document.body.dataset.feedLimit) || 4);
-    const recent = [...(events || [])].reverse().slice(0, limit);
-    feed.innerHTML = recent.map((ev, i) => {
-      const side = eventSide(ev);
-      const isLast = i === recent.length - 1;
-      return `
-        <div class="feed-item${isLast ? ' last' : ''}">
-          <div class="feed-top">
-            <span class="feed-min">${eventMinute(ev)}</span>
-            <span class="feed-type ${side}">${eventLabel(ev)}</span>
-            <span class="feed-player ${side}">${ev.player?.name ?? '–'}</span>
-          </div>
-          <div class="feed-desc">${eventDesc(ev)}</div>
-        </div>`;
-    }).join('');
+
+    // Goals are always kept (most-recent first). Synthetic rows are short (no
+    // second line), so more of them fit. We pack by MEASURED height rather than
+    // a fixed count: render the candidates, measure, then keep as many as fit
+    // the card — never dropping a goal.
+    const goals  = liveFeed.filter((it) => it.goal);
+    const others = liveFeed.filter((it) => !it.goal).slice(0, 16);
+    const candidates = [...goals, ...others].sort((a, b) => liveFeed.indexOf(a) - liveFeed.indexOf(b)); // newest-first
+
+    // Pair screen keeps a fixed small count (tight vertical budget alongside the
+    // second match), goals still protected.
+    if (isPair) {
+      const g = goals.slice(0, 3);
+      const o = others.slice(0, Math.max(0, 3 - g.length));
+      const recent = [...g, ...o].sort((a, b) => liveFeed.indexOf(a) - liveFeed.indexOf(b));
+      feed.innerHTML = recent.map((it, i) => feedRowHtml(it, i === recent.length - 1, !renderedFeedIds.has(it.id))).join('');
+      renderedFeedIds = new Set(recent.map((it) => it.id));
+      return;
+    }
+
+    // Pass 1: render every candidate at full height (no `.last`) to measure.
+    feed.innerHTML = candidates.map((it) => feedRowHtml(it, false)).join('');
+    const cs = getComputedStyle(feed);
+    const budget = feed.clientHeight - parseFloat(cs.paddingTop || '0') - parseFloat(cs.paddingBottom || '0');
+    const gap = parseFloat(cs.rowGap || cs.gap || '0') || 0;
+    const heightOf = new Map(candidates.map((it, i) => [it, feed.children[i] ? feed.children[i].offsetHeight : 0]));
+
+    // Greedy fit: goals first (guaranteed), then newest others while they fit.
+    const chosen = new Set();
+    let used = 0;
+    const tryAdd = (it) => {
+      const cost = heightOf.get(it) + (chosen.size ? gap : 0);
+      if (used + cost <= budget) { chosen.add(it); used += cost; return true; }
+      return false;
+    };
+    for (const g of goals) tryAdd(g);
+    for (const it of candidates) if (!it.goal && !chosen.has(it)) tryAdd(it);
+
+    // Pass 2: render the chosen set, newest-first. New rows (ids not previously
+    // rendered) get `.enter` so they ease in; persisting rows render unchanged.
+    const finalItems = candidates.filter((it) => chosen.has(it));
+    feed.innerHTML = finalItems
+      .map((it, i) => feedRowHtml(it, i === finalItems.length - 1, !renderedFeedIds.has(it.id)))
+      .join('');
+    renderedFeedIds = new Set(finalItems.map((it) => it.id));
   }
 
   // Compact "MM+E'" form used by the small secondary (also-live) clock.
@@ -169,12 +307,29 @@
   }
   function renderClock() {
     const el = $('match-clock');
-    if (!el || clockBaseMin === null) return;
-    let totalSec = clockBaseMin * 60;
-    if (clockRunning) totalSec += Math.floor((Date.now() - clockBaseTs) / 1000);
+    if (!el) return;
+    // At breaks (Half Time / Full Time / Penalties / AET) the clock isn't
+    // ticking, so a frozen "45:00" / "90:00" would be misleading — hide it and
+    // let the period text (e.g. "Half Time") stand on its own.
+    if (!clockRunning) { el.style.display = 'none'; return; }
+    el.style.display = '';
+    if (clockBaseMin === null) return;
+    const totalSec = clockBaseMin * 60 + Math.floor((Date.now() - clockBaseTs) / 1000);
     const mm = Math.floor(totalSec / 60);
     const ss = totalSec % 60;
     el.textContent = `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+  }
+
+  // Update a number element, easing the new value in (slide up + fade) — but
+  // only when it actually changes, so static polls don't re-animate.
+  function setNum(el, value) {
+    if (!el) return;
+    const v = `${value ?? '–'}`;
+    if (el.textContent === v) return;
+    el.textContent = v;
+    el.classList.remove('bump');
+    void el.offsetWidth; // reflow so the CSS animation restarts
+    el.classList.add('bump');
   }
 
   // ── Primary render ──────────────────────────────────────────────────────
@@ -182,8 +337,8 @@
     homeId = state.home.id;
     awayId = state.away.id;
 
-    $('score-home').textContent = state.scoreH ?? '–';
-    $('score-away').textContent = state.scoreA ?? '–';
+    setNum($('score-home'), state.scoreH);
+    setNum($('score-away'), state.scoreA);
     syncClock(state);
     $('match-period').textContent = state.period ?? '–';
     $('meta-group').textContent = state.metaGroup ?? '–';
@@ -196,9 +351,9 @@
 
     const possH = Number.isFinite(state.possH) ? state.possH : 50;
     const possA = Number.isFinite(state.possA) ? state.possA : 50;
-    $('poss-home').textContent = `${possH}%`;
-    $('poss-away').textContent = `${possA}%`;
-    $('poss-bar-home').style.width = `${possH}%`;
+    setNum($('poss-home'), `${possH}%`);
+    setNum($('poss-away'), `${possA}%`);
+    $('poss-bar-home').style.width = `${possH}%`; // eased via CSS transition
     // Flag circles flanking the possession bar (single screen only).
     setFlag($('poss-flag-home'), state.home.name, state.home.logo);
     setFlag($('poss-flag-away'), state.away.name, state.away.logo);
@@ -210,11 +365,12 @@
       ['fouls', state.fouls],
     ];
     for (const [id, pair] of stats) {
-      $(`s-${id}-h`).textContent = pair?.[0] ?? '–';
-      $(`s-${id}-a`).textContent = pair?.[1] ?? '–';
+      setNum($(`s-${id}-h`), pair?.[0]);
+      setNum($(`s-${id}-a`), pair?.[1]);
     }
 
-    renderFeed(state.events);
+    updateTicker(state);
+    renderFeed();
 
     // Goal-overlay nudge — only fire after a baseline poll establishes scores.
     const newH = state.scoreH ?? 0;
@@ -299,8 +455,10 @@
   let liveState = null;
 
   function nextDelay() {
-    if (POLL_OVERRIDE_MS) return POLL_OVERRIDE_MS;
-    return liveState?.isLive ? LIVE_POLL_MS : IDLE_POLL_MS;
+    const base = POLL_OVERRIDE_MS ? POLL_OVERRIDE_MS : (liveState?.isLive ? LIVE_POLL_MS : IDLE_POLL_MS);
+    // ±12% jitter so multiple displays showing the same match don't fetch
+    // /api/match in lockstep (spreads load, improves the proxy cache hit rate).
+    return Math.round(base * (0.88 + Math.random() * 0.24));
   }
 
   async function tick() {

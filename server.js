@@ -8,7 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const { URL } = require('url');
 const { loadEnvFiles } = require('./lib/load-env');
-const { fetchMatch, fetchLive, fetchUpcoming, fetchUpcomingList, getApiFootballKey } = require('./lib/match-service');
+const { fetchMatch, fetchLive, fetchUpcoming, fetchUpcomingList, getApiFootballKey, getLastRateLimit } = require('./lib/match-service');
 const { fetchStandings } = require('./lib/standings-service');
 const { fetchTopScorers } = require('./lib/topscorers-service');
 
@@ -73,6 +73,7 @@ const server = http.createServer(async (req, res) => {
     }
     try {
       const data = await fetchMatch(parseQuery(req.url));
+      data.rateLimit = getLastRateLimit(); // mirror the Vercel handler (api/match.js)
       return sendJson(res, 200, data);
     } catch (err) {
       if (err.code === 'MISSING_API_KEY') {
@@ -93,6 +94,7 @@ const server = http.createServer(async (req, res) => {
     }
     try {
       const data = await fetchLive(parseQuery(req.url));
+      data.rateLimit = getLastRateLimit(); // mirror the Vercel handler (api/live.js)
       return sendJson(res, 200, data);
     } catch (err) {
       if (err.code === 'MISSING_API_KEY') {

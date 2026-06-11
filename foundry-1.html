@@ -16,6 +16,7 @@ html, body { width: 1080px; height: 1920px; overflow: hidden; background: var(--
   width: 1080px;
   height: 1920px;
   border: none;
+  transition: opacity 0.4s ease; /* smooth dim when a goal overlay shows */
 }
 /* Transition cover — same off-black as the screens; faded in to mask the
    iframe reload between carousel slides, then out once the next screen paints.
@@ -64,6 +65,8 @@ const SLIDE_DURATION_MS = 45000;    // hold 45 s per carousel screen
 // the live screen appears the instant the match goes in-play.
 const PREKICKOFF_WINDOW_MS = 60 * 1000;
 const PREKICKOFF_POLL_MS   = 5 * 1000;
+// ±12% jitter so foundry-1 doesn't poll the API in lockstep with the offices.
+const jitter = (ms) => Math.round(ms * (0.88 + Math.random() * 0.24));
 // First WC 2026 match: 5:00am AEST, 12 Jun 2026 (= 19:00 UTC, 11 Jun). Used only
 // as a fallback target for the pre-kickoff ramp if /api/upcoming is unreachable.
 const FIRST_MATCH_KICKOFF = Date.UTC(2026, 5, 11, 19, 0);
@@ -237,7 +240,7 @@ async function checkLive() {
   }
 
   // Poll fast while a match is live or during the grace window (to re-confirm).
-  liveTimer = setTimeout(checkLive, (count > 0 || inGrace) ? LIVE_POLL_MS : nextPollDelay(count));
+  liveTimer = setTimeout(checkLive, jitter((count > 0 || inGrace) ? LIVE_POLL_MS : nextPollDelay(count)));
 }
 
 // ── Goal overlay ──────────────────────────────────────────────────────────
@@ -245,6 +248,7 @@ async function checkLive() {
 // { type:'GOAL', scorer } to its parent on a score change. Show screen-goal
 // full-screen over the live screen, then auto-hide — same as office-1/2.
 const goalFrame = document.getElementById('goal-frame');
+let goalHideTimer = null;
 
 window.addEventListener('message', (e) => {
   if (e.data?.type !== 'GOAL') return;
@@ -252,6 +256,9 @@ window.addEventListener('message', (e) => {
 });
 
 function showGoalOverlay(scorerText) {
+  if (goalHideTimer) clearTimeout(goalHideTimer); // a second goal mid-animation restarts the timer
+  // Dim the live screen to 20% so the goal overlay reads clearly on top.
+  frame.style.opacity = '0.2';
   if (!goalFrame.src || !goalFrame.src.includes('screen-goal.html')) {
     goalFrame.src = 'screen-goal.html';
     goalFrame.onload = () => {
@@ -263,7 +270,10 @@ function showGoalOverlay(scorerText) {
     goalFrame.contentWindow?.triggerGoal?.(scorerText);
   }
   // Auto-hide after 8.5s (matches the goal animation: 2.5s in + 5s hold + 0.8s out + 0.2s buffer).
-  setTimeout(() => { goalFrame.style.display = 'none'; }, 8500);
+  goalHideTimer = setTimeout(() => {
+    goalFrame.style.display = 'none';
+    frame.style.opacity = '1'; // restore the live screen
+  }, 8500);
 }
 
 checkLive();

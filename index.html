@@ -241,6 +241,9 @@ const IDLE_POLL_MS = 5 * 60 * 1000; // no live match → poll every 5 min
 const LIVE_POLL_MS = 10 * 1000;     // match(es) live → poll every 10 s
 const LIVE_POLL_SEC = LIVE_POLL_MS / 1000; // passed to the live screens as ?poll=
 const SLIDE_MS     = 45 * 1000;     // hold 45 s per carousel screen
+// ±12% jitter so office-1, office-2 and foundry-1 don't poll the API in lockstep
+// (spreads the load, avoids per-second bursts, improves the proxy cache hit rate).
+const jitter = (ms) => Math.round(ms * (0.88 + Math.random() * 0.24));
 // In the final minute before a scheduled kickoff, ramp polling to every 5 s so
 // we flip to the live screen the instant the match goes in-play (e.g. the 5am
 // opener: from 04:59am AEST we poll /api/live every 5 s instead of every 5 min).
@@ -507,6 +510,7 @@ document.getElementById('speed-select').addEventListener('change', (e) => {
 //  GOAL OVERLAY — triggered by postMessage from match-live iframe
 // ═══════════════════════════════════════════════════════════════
 const goalFrame  = document.getElementById('goal-frame');
+let goalHideTimer = null;
 
 window.addEventListener('message', (e) => {
   if (e.data?.type !== 'GOAL') return;
@@ -515,6 +519,10 @@ window.addEventListener('message', (e) => {
 });
 
 function showGoalOverlay(scorerText) {
+  if (goalHideTimer) clearTimeout(goalHideTimer); // a second goal mid-animation restarts the timer
+  // Dim the live screen to 20% so the goal overlay reads clearly on top
+  // (#screen-frame has an opacity transition for a smooth fade).
+  frame.style.opacity = '0.2';
   // Load goal screen into the overlay iframe if not already loaded
   if (!goalFrame.src || !goalFrame.src.includes('screen-goal.html')) {
     goalFrame.src = 'screen-goal.html';
@@ -527,7 +535,10 @@ function showGoalOverlay(scorerText) {
     goalFrame.contentWindow?.triggerGoal?.(scorerText);
   }
   // Auto-hide after 8.5s (matches the goal animation total: 2.5s in + 5s hold + 0.8s out + 0.2s buffer)
-  setTimeout(() => { goalFrame.style.display = 'none'; }, 8500);
+  goalHideTimer = setTimeout(() => {
+    goalFrame.style.display = 'none';
+    frame.style.opacity = '1'; // restore the live screen
+  }, 8500);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -677,7 +688,7 @@ async function checkLive() {
   }
 
   // Poll fast while a match is live or during the grace window (to re-confirm).
-  liveTimer = setTimeout(checkLive, (count > 0 || inGrace) ? LIVE_POLL_MS : nextPollDelay(count));
+  liveTimer = setTimeout(checkLive, jitter((count > 0 || inGrace) ? LIVE_POLL_MS : nextPollDelay(count)));
 }
 
 // ═══════════════════════════════════════════════════════════════
