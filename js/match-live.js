@@ -35,6 +35,12 @@
     ? Math.max(2, Number(P('poll'))) * 1000
     : null;
 
+  // Broadcast delay: shift the WHOLE display back ~10s so it lines up with the
+  // TV feed (which has a built-in delay) instead of leading it — e.g. the goal
+  // overlay firing before the broadcast shows the goal. Override with ?delay=
+  // (seconds); 0 disables. Applies to score/stats/feed/goal AND the clock.
+  const DISPLAY_DELAY_MS = (P('delay') != null ? Math.max(0, Number(P('delay')) || 0) : 10) * 1000;
+
   const $ = (id) => document.getElementById(id);
 
   // ── Score / state for goal detection ─────────────────────────────────────
@@ -341,9 +347,10 @@
     el.style.display = '';
     let totalSec;
     if (serverClock) {
-      totalSec = serverClock.minute * 60 + Math.floor((Date.now() - serverClock.anchorMs) / 1000);
+      // Subtract the broadcast delay so the clock trails the TV like the rest.
+      totalSec = serverClock.minute * 60 + Math.floor((Date.now() - serverClock.anchorMs - DISPLAY_DELAY_MS) / 1000);
     } else if (clockBaseMin !== null) {
-      totalSec = clockBaseMin * 60 + Math.floor((Date.now() - clockBaseTs) / 1000);
+      totalSec = clockBaseMin * 60 + Math.floor((Date.now() - clockBaseTs - DISPLAY_DELAY_MS) / 1000);
     } else {
       return;
     }
@@ -496,30 +503,37 @@
 
   async function tick() {
     try {
-      setStatus('Fetching…');
       const primary = await fetchMatch(primaryQuery());
-      liveState = primary;
-      renderPrimary(primary);
+      liveState = primary; // real-time — keeps the poll cadence correct
 
+      let secondary; // undefined = not pair; null = none configured; 'error' = failed
       if (isPair) {
         const sq = secondaryQuery();
         if (sq) {
-          try {
-            const secondary = await fetchMatch(sq);
-            renderSecondary(secondary);
-          } catch (err) {
-            clearSecondary('Second match unavailable');
-            console.warn('[match-live] secondary fetch failed:', err);
-          }
+          try { secondary = await fetchMatch(sq); }
+          catch (err) { secondary = 'error'; console.warn('[match-live] secondary fetch failed:', err); }
         } else {
-          clearSecondary('No second match configured');
+          secondary = null;
         }
       }
 
-      const t = new Date(primary.fetchedAt).toLocaleTimeString();
-      const cadence = primary.isLive ? '1min' : '5min';
-      const tag = primary.resolvedAs ? ` · ${primary.resolvedAs}` : '';
-      setStatus(`Live · #${primary.fixtureId} · ${primary.home.name} v ${primary.away.name}${tag} · ${t} · poll ${cadence}`);
+      // Apply the data to the screen AFTER the broadcast delay so the display
+      // trails the TV (which has its own delay) rather than leading it.
+      const apply = () => {
+        renderPrimary(primary);
+        if (isPair) {
+          if (secondary === 'error') clearSecondary('Second match unavailable');
+          else if (secondary) renderSecondary(secondary);
+          else clearSecondary('No second match configured');
+        }
+        const t = new Date(primary.fetchedAt).toLocaleTimeString();
+        const cadence = primary.isLive ? '1min' : '5min';
+        const tag = primary.resolvedAs ? ` · ${primary.resolvedAs}` : '';
+        const delayTag = DISPLAY_DELAY_MS ? ` · +${DISPLAY_DELAY_MS / 1000}s` : '';
+        setStatus(`Live · #${primary.fixtureId} · ${primary.home.name} v ${primary.away.name}${tag} · ${t} · poll ${cadence}${delayTag}`);
+      };
+      if (DISPLAY_DELAY_MS > 0) setTimeout(apply, DISPLAY_DELAY_MS);
+      else apply();
     } catch (err) {
       setStatus(`Error: ${err.message}`, true);
       console.error('[match-live]', err);
