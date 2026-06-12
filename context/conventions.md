@@ -15,7 +15,9 @@
 
 ## API
 
-- Polling: never below 30s interval, never above 1/min during live matches
+- Polling: live screens poll the proxy every 10s; idle/upcoming screens every 5min.
+  Plan limit is 450 req/min — the proxy's ~8s cache + single-flight keeps upstream
+  hits ~7/min per live fixture no matter how many displays poll.
 - Always include `?demo=1` fallback for offline / pre-tournament testing
 - Comment api-football quirks inline (e.g. group letter mapping, `Group Stage - N` → `Group X`)
 - Don't hardcode fixture IDs — resolve dynamically via team+season+last/next/date

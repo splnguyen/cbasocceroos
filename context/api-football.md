@@ -15,9 +15,14 @@
 
 ## Polling rate
 
-- **1 call per minute** per fixture in progress (api-football recommendation)
-- API update frequency: every 15 seconds (so 1/min is comfortable)
-- Watch quota on busy match days — multiple matches simultaneously can mean ~2-4k requests/day
+- **Plan limit: 450 req/min, 75,000/day** — verified live from the key's
+  `x-ratelimit-limit` / `x-ratelimit-requests-limit` headers (surfaced in
+  `/api/match` → `rateLimit`, also as `X-RateLimit-*` response headers).
+- Live screens poll the proxy every **10s**. Upstream is NOT hit 6×/min: the
+  proxy caches each api-football endpoint ~8s with single-flight, so upstream
+  hits stay ~7/min per live fixture **regardless of how many displays poll**.
+- api-football updates live data every ~15s, so 10s polling never misses an update.
+- Day quota is comfortable: ~7/min × match minutes × concurrent matches stays well under 75k.
 
 ## Team IDs
 

@@ -12,6 +12,30 @@
       "headers": [
         { "key": "Cache-Control", "value": "no-cache" }
       ]
+    },
+    {
+      "source": "/screen-matchlive-foundry.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache" }
+      ]
+    },
+    {
+      "source": "/screen-matchlivepair.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache" }
+      ]
+    },
+    {
+      "source": "/foundry-1.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache" }
+      ]
+    },
+    {
+      "source": "/js/match-live.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache" }
+      ]
     }
   ]
 }

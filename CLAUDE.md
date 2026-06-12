@@ -9,7 +9,7 @@ Sponsor-branded for Commonwealth Bank of Australia (CBA), principal partner of F
 ## Critical rules
 
 - All Figma px values **divide by 2** for CSS (designs are at 2×)
-- Polling: **1 call/min** per live fixture, never more
+- API plan limit is **450 req/min, 75,000/day** (verified from the key's `x-ratelimit-*` headers). Live screens poll the proxy every **10s**; the proxy's ~8s cache + single-flight keeps upstream hits ~7/min per live fixture regardless of display count — comfortably under 450/min
 - Times displayed in **AEST/AEDT only** — never raw UTC
 - **Vanilla JS only**, no frameworks
 - Always include `?demo=1` fallback for offline / pre-tournament testing

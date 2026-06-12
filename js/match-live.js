@@ -28,8 +28,13 @@
   const P = (k) => (params.has(k) ? params.get(k) : (cfg[k] != null ? String(cfg[k]) : null));
   const isPair = document.body.dataset.pair === '1';
 
-  // Per CLAUDE.md / context/api-football.md: 1 call/min when live, slower otherwise.
-  const LIVE_POLL_MS = 60_000;
+  // Live: poll the PROXY every 10s so the screen updates frequently (stats,
+  // clock, synthetic ticker). This does NOT translate to 6 upstream calls/min:
+  // lib/match-service.js caches each api-football endpoint ~8s with single-flight,
+  // so upstream hits for the live fixture stay ~7/min total regardless of how many
+  // displays poll — well under the 450/min limit. Each render is still buffered by
+  // DISPLAY_DELAY_MS (80s) so the screen trails the TV feed. Idle stays slow.
+  const LIVE_POLL_MS = 10_000;
   const IDLE_POLL_MS = 5 * 60_000;
   const POLL_OVERRIDE_MS = P('poll')
     ? Math.max(2, Number(P('poll'))) * 1000
@@ -488,7 +493,7 @@
           else clearSecondary('No second match configured');
         }
         const t = new Date(primary.fetchedAt).toLocaleTimeString();
-        const cadence = primary.isLive ? '1min' : '5min';
+        const cadence = primary.isLive ? '10s' : '5min';
         const tag = primary.resolvedAs ? ` · ${primary.resolvedAs}` : '';
         const delayTag = DISPLAY_DELAY_MS ? ` · +${DISPLAY_DELAY_MS / 1000}s` : '';
         setStatus(`Live · #${primary.fixtureId} · ${primary.home.name} v ${primary.away.name}${tag} · ${t} · poll ${cadence}${delayTag}`);
