@@ -148,9 +148,13 @@ html,body{
   height:308px;overflow:hidden;flex-shrink:0;margin-top:40px;
 }
 .feed-item{
-  /* Height hugs the content (flag + optional description); bottom padding kept. */
+  /* Height hugs the content (flag + optional description); bottom padding kept.
+     flex-shrink:0 keeps each row at its natural height. Without it the flex
+     column compresses rows under overflow — squishing the dividers AND
+     corrupting the height-budget packer's measurements (so it over-packed). */
   display:flex;flex-direction:column;gap:18px;
   padding-bottom:20px;
+  flex-shrink:0;
   border-bottom:1px solid var(--dark-grey);
 }
 .feed-item.last{border-bottom:none;padding-bottom:0;}

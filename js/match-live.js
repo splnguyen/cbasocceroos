@@ -35,11 +35,12 @@
     ? Math.max(2, Number(P('poll'))) * 1000
     : null;
 
-  // Broadcast delay: shift the WHOLE display back ~10s so it lines up with the
-  // TV feed (which has a built-in delay) instead of leading it — e.g. the goal
-  // overlay firing before the broadcast shows the goal. Override with ?delay=
-  // (seconds); 0 disables. Applies to score/stats/feed/goal AND the clock.
-  const DISPLAY_DELAY_MS = (P('delay') != null ? Math.max(0, Number(P('delay')) || 0) : 10) * 1000;
+  // Broadcast delay: shift the WHOLE display back so it lines up with the TV
+  // feed (which has a built-in delay) instead of leading it — e.g. the goal
+  // overlay firing before the broadcast shows the goal. Measured ~80s on the
+  // venue feed. Override with ?delay= (seconds); 0 disables. Applies to
+  // score/stats/feed/goal AND the clock.
+  const DISPLAY_DELAY_MS = (P('delay') != null ? Math.max(0, Number(P('delay')) || 0) : 80) * 1000;
 
   const $ = (id) => document.getElementById(id);
 
@@ -136,42 +137,25 @@
   // confirmed goal/card events. `liveFeed` is a single newest-first stream of
   // real + synthetic items, in the order they were detected.
   let liveFeed = [];
-  let prevStats = null;
   const seenEventKeys = new Set();
+  const seenTickerIds = new Set();  // server synthetic-item ids already added
   let tickerFixtureId = null;
-  let lastPossEmitted = null;
-  let feedSeq = 0;                  // unique id per feed item (for enter animation)
+  let feedSeq = 0;                  // local id per feed item (for the enter animation)
   let renderedFeedIds = new Set();  // ids currently in the DOM, to detect new rows
-  const TICKER_MAX = 40;
+  const TICKER_MAX = 60;
 
   function eventKey(ev) {
     return [ev.time?.elapsed, ev.time?.extra, ev.type, ev.detail, ev.team?.id, ev.player?.name].join('|');
   }
-  function statSnapshot(state) {
-    const xg = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
-    return {
-      shots:    state.shots    || [0, 0],
-      target:   state.target   || [0, 0],
-      corners:  state.corners  || [0, 0],
-      saves:    state.saves    || [0, 0],
-      fouls:    state.fouls    || [0, 0],
-      offsides: state.offsides || [0, 0],
-      poss:     Number.isFinite(state.possH) ? state.possH : 50,
-      xg:       [xg(state.xg?.[0]), xg(state.xg?.[1])],
-    };
-  }
 
   function updateTicker(state) {
-    // Reset the ticker when the fixture changes.
+    // Reset when the fixture changes.
     if (state.fixtureId !== tickerFixtureId) {
       tickerFixtureId = state.fixtureId;
-      liveFeed = []; prevStats = null; seenEventKeys.clear();
-      lastPossEmitted = null; renderedFeedIds = new Set();
+      liveFeed = []; seenEventKeys.clear(); seenTickerIds.clear(); renderedFeedIds = new Set();
     }
 
-    const fresh = []; // new items this poll, oldest → newest
-    const min = `${state.elapsed ?? 0}${state.extra ? `+${state.extra}` : ''}'`;
-    const teamName = (i) => (i === 0 ? state.home.name : state.away.name) || ''; // title case (as the API gives it)
+    const fresh = []; // new items this poll, each with a numeric minute for sorting
 
     // 1. New real events (Goal / Card / Sub / VAR) — these carry a team flag.
     for (const ev of (state.events || [])) {
@@ -181,50 +165,27 @@
       const team = ev.team?.id === homeId ? state.home : state.away;
       const label = eventLabel(ev);
       let desc = eventDesc(ev);
-      // Drop the white second line if it's empty or just repeats the yellow label
-      // (e.g. a Yellow Card whose detail is also "Yellow Card") — the row then
-      // hugs to a single line.
+      // Drop the white second line if it's empty or just repeats the yellow
+      // label (e.g. a Yellow Card whose detail is also "Yellow Card").
       if (desc && desc.trim().toLowerCase() === label.trim().toLowerCase()) desc = '';
-      fresh.push({ kind: 'real', goal: ev.type === 'Goal', side: eventSide(ev), min: eventMinute(ev),
+      fresh.push({ kind: 'real', goal: ev.type === 'Goal', side: eventSide(ev),
+        min: eventMinute(ev), minNum: (ev.time?.elapsed || 0) * 100 + (ev.time?.extra || 0),
         type: label, who: ev.player?.name ?? '–', desc,
         flagName: team?.name, flagLogo: team?.logo });
     }
 
-    // 2. Synthetic stat-derived movement (only after a baseline snapshot).
-    const cur = statSnapshot(state);
-    if (prevStats) {
-      const push = (side, type, who) => fresh.push({ kind: 'stat', side, min, type, who, desc: '' });
-      const cap = (n) => Math.min(Math.max(0, n), 3); // guard a big jump after a gap
-      for (const [side, i] of [['home', 0], ['away', 1]]) {
-        const onTarget  = cap(cur.target[i]   - prevStats.target[i]);
-        const offTarget = cap((cur.shots[i] - prevStats.shots[i]) - (cur.target[i] - prevStats.target[i]));
-        const corners   = cap(cur.corners[i]  - prevStats.corners[i]);
-        const saves     = cap(cur.saves[i]    - prevStats.saves[i]);
-        const fouls     = cap(cur.fouls[i]     - prevStats.fouls[i]);
-        const offs      = cap(cur.offsides[i] - prevStats.offsides[i]);
-        const name = teamName(i);
-        for (let k = 0; k < onTarget;  k++) push(side, 'Shot on Target', name);
-        for (let k = 0; k < offTarget; k++) push(side, 'Shot', name);
-        for (let k = 0; k < corners;   k++) push(side, 'Corner', name);
-        for (let k = 0; k < saves;     k++) push(side, 'Save', name);
-        for (let k = 0; k < fouls;     k++) push(side, 'Foul', name);
-        for (let k = 0; k < offs;      k++) push(side, 'Offside', name);
-      }
-      // Possession swing (≥4% from the last one we announced).
-      if (Math.abs(cur.poss - lastPossEmitted) >= 4) {
-        lastPossEmitted = cur.poss;
-        const homeLead = cur.poss >= 50;
-        push(homeLead ? 'home' : 'away', 'Possession',
-          `${teamName(homeLead ? 0 : 1)} ${homeLead ? cur.poss : 100 - cur.poss}%`);
-      }
-    } else {
-      // Seed the possession baseline so poll #2 doesn't announce a catch-up swing.
-      lastPossEmitted = cur.poss;
+    // 2. Synthetic ticker — generated on the SERVER (state.ticker) so every
+    // display and every reload shows the SAME list, regardless of load time.
+    for (const t of (state.ticker || [])) {
+      if (seenTickerIds.has(t.id)) continue;
+      seenTickerIds.add(t.id);
+      fresh.push({ kind: 'stat', side: t.side, min: t.min, minNum: t.minNum || 0,
+        type: t.type, who: t.who, desc: '' });
     }
-    prevStats = cur;
 
     if (fresh.length) {
-      for (const it of fresh) it.id = ++feedSeq; // stable id so new rows can animate in
+      fresh.sort((a, b) => a.minNum - b.minNum); // oldest → newest by match minute
+      for (const it of fresh) it.id = ++feedSeq;
       liveFeed = [...fresh.reverse(), ...liveFeed].slice(0, TICKER_MAX);
     }
   }
