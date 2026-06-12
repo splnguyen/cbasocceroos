@@ -14,7 +14,7 @@
 
   const $ = (id) => document.getElementById(id);
   let hasData = false;
-  const CACHE_KEY = `cba:matchcomplete:v1:demo=${isDemo ? 1 : 0}`;
+  const CACHE_KEY = `cba:matchcomplete:v2:demo=${isDemo ? 1 : 0}`; // v2: last-finished resolution
 
   // ── Apply (from fetch or cache) ──────────────────────────────────────────
   function applyPayload(json, badgeText = 'Just updated') {
@@ -49,7 +49,10 @@
     try {
       const qs = new URLSearchParams();
       qs.set('players', '1');                       // top performers panel
+      // Resolve the most recent FINISHED match — not the live/upcoming default,
+      // which would show a not-yet-played fixture as "Recently Completed".
       if (isDemo) qs.set('demo', '1');
+      else qs.set('status', 'finished');
       const res = await fetch(`/api/match?${qs}`, { cache: 'no-store' });
       const json = await res.json();
       if (!res.ok || !json.ok) throw new Error(json.error || `HTTP ${res.status}`);

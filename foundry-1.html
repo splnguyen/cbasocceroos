@@ -32,12 +32,25 @@ html, body { width: 1080px; height: 1920px; overflow: hidden; background: var(--
 }
 #transition-overlay.fade-in  { opacity: 1; }
 #transition-overlay.fade-out { opacity: 0; }
+/* Carousel progress bar — yellow timer at the bottom that fills over each
+   slide (mirrors the office display). Hidden during a live match. */
+#progress-bar {
+  position: absolute;
+  bottom: 0; left: 0;
+  height: 6px;
+  background: var(--brand-yellow);
+  width: 0;
+  z-index: 95;
+  transition: width linear;
+}
 </style>
 </head>
 <body>
 <iframe id="screen-frame" src="screen-tournament-countdown-foundry.html" title="Foundry 1 screen"></iframe>
 <!-- Transition cover (off-black) — masks the iframe reload between slides. -->
 <div id="transition-overlay"></div>
+<!-- Carousel slide-timer progress bar (yellow, bottom). -->
+<div id="progress-bar"></div>
 <!-- Goal overlay: hidden iframe shown on top of the live screen when a goal is
      scored (driven by postMessage from the match-live screen). -->
 <iframe id="goal-frame" title="Goal overlay" style="display:none;position:absolute;inset:0;width:1080px;height:1920px;border:none;z-index:100;pointer-events:none;"></iframe>
@@ -138,6 +151,27 @@ function goTo(src) {
   }, COVER_MS);
 }
 
+// ── Carousel progress bar (yellow slide timer) ────────────────────────────
+const bar = document.getElementById('progress-bar');
+function startProgressBar(duration) {
+  bar.style.transition = 'none';
+  bar.style.width = '0';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    bar.style.transition = `width ${duration}ms linear`;
+    bar.style.width = '100%';
+  }));
+}
+function stopProgressBar() {
+  bar.style.transition = 'none';
+  bar.style.width = '0';
+}
+// Animate the bar only when the carousel actually rotates (2+ screens); a single
+// static screen (pre-tournament countdown) shows no bar, and live mode hides it.
+function restartProgress() {
+  if (activePlaylist().length > 1) startProgressBar(SLIDE_DURATION_MS);
+  else stopProgressBar();
+}
+
 // ── Carousel (idle) ───────────────────────────────────────────────────────
 // Re-reads activePlaylist() each tick so the pre-tournament → group-stage
 // switch is picked up even without a live match in between.
@@ -145,6 +179,7 @@ function advance() {
   const pl = activePlaylist();
   carouselIndex = (carouselIndex + 1) % pl.length;
   goTo(pl[carouselIndex].src);
+  restartProgress();
 }
 function startCarousel() {
   if (liveMode) liveMode = false;
@@ -155,6 +190,7 @@ function startCarousel() {
   // is re-evaluated on the next tick; goTo dedups so a static screen never reloads.
   clearInterval(carouselTimer);
   carouselTimer = setInterval(advance, SLIDE_DURATION_MS);
+  restartProgress();
 }
 
 // ── Live ──────────────────────────────────────────────────────────────────
@@ -165,6 +201,7 @@ function enterLive(fixtures) {
   liveMode = true;
   clearInterval(carouselTimer);
   carouselTimer = null;
+  stopProgressBar(); // no slide timer during a live match
   const primary = fixtures[0];
   const qs = new URLSearchParams();
   qs.set('poll', LIVE_POLL_SEC);

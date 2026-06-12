@@ -34,7 +34,7 @@
 
   let kickoffEpoch = null;
   let hasData = false;
-  const CACHE_KEY = `cba:comingup:v1:demo=${isDemo ? 1 : 0}`;
+  const CACHE_KEY = `cba:comingup:v2:demo=${isDemo ? 1 : 0}`; // v2: next-tournament (no team filter)
 
   // ── Time helpers ─────────────────────────────────────────────────────────
   const AEST = 'Australia/Sydney';
@@ -150,7 +150,8 @@
     updatedBadge.textContent = 'Updating…';
     try {
       const qs = new URLSearchParams();
-      qs.set('team', AUS_TEAM_ID);
+      // No team filter — show the actual NEXT tournament match (any teams),
+      // not the next Socceroos match.
       if (isDemo) {
         qs.set('season', '2022');
       }

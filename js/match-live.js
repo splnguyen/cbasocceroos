@@ -44,10 +44,14 @@
   let awayId = null;
 
   // ── Match clock (mm:ss, ticks locally between API polls) ─────────────────
-  // api-football gives `elapsed` in whole minutes only, so we synthesise the
-  // seconds locally: record the minute + a timestamp, then count up every sec.
-  let clockBaseMin = null;   // minutes from the API at last sync
-  let clockBaseTs  = 0;      // Date.now() when that minute was received
+  // api-football gives `elapsed` in whole minutes only. The proxy now sends a
+  // shared per-minute anchor (state.clock) so every display ticks from the SAME
+  // reference (assumes the screens' clocks are roughly NTP-synced, which office
+  // machines are). If the anchor is missing we fall back to the old local
+  // synthesis (record the minute + a local timestamp, count up each second).
+  let serverClock  = null;   // { minute, anchorMs } from the proxy (shared)
+  let clockBaseMin = null;   // legacy fallback: minutes from the API at last sync
+  let clockBaseTs  = 0;      // legacy fallback: Date.now() when that minute was received
   let clockRunning = false;  // only ticks during live, in-play periods
 
   function setStatus(msg, isError = false) {
@@ -309,16 +313,21 @@
     return !!state.isLive && !/Half Time|Full Time|Penalties|AET/i.test(state.period || '');
   }
   function syncClock(state) {
-    const mins = state.elapsed ?? 0;
-    if (clockIsRunning(state)) {
+    clockRunning = clockIsRunning(state);
+    if (clockRunning && state.clock) {
+      // Shared server anchor — all displays count from the same reference.
+      serverClock = state.clock;
+    } else if (clockRunning) {
+      // Fallback: synthesise locally (re-baseline when the API minute advances).
+      serverClock = null;
+      const mins = state.elapsed ?? 0;
       if (clockBaseMin === null || mins > clockBaseMin) {
         clockBaseMin = mins;
         clockBaseTs = Date.now();
       }
-      clockRunning = true;
     } else {
-      clockRunning = false;
-      clockBaseMin = mins;
+      serverClock = null;
+      clockBaseMin = state.elapsed ?? 0;
     }
     renderClock();
   }
@@ -330,8 +339,15 @@
     // let the period text (e.g. "Half Time") stand on its own.
     if (!clockRunning) { el.style.display = 'none'; return; }
     el.style.display = '';
-    if (clockBaseMin === null) return;
-    const totalSec = clockBaseMin * 60 + Math.floor((Date.now() - clockBaseTs) / 1000);
+    let totalSec;
+    if (serverClock) {
+      totalSec = serverClock.minute * 60 + Math.floor((Date.now() - serverClock.anchorMs) / 1000);
+    } else if (clockBaseMin !== null) {
+      totalSec = clockBaseMin * 60 + Math.floor((Date.now() - clockBaseTs) / 1000);
+    } else {
+      return;
+    }
+    if (totalSec < 0) totalSec = 0; // guard against a display clock running behind the server
     const mm = Math.floor(totalSec / 60);
     const ss = totalSec % 60;
     el.textContent = `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
