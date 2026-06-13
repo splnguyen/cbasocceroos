@@ -1,5 +1,8 @@
 {
   "version": 2,
+  "functions": {
+    "api/topkeepers.js": { "maxDuration": 30 }
+  },
   "headers": [
     {
       "source": "/index.html",
