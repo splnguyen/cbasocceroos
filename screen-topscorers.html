@@ -45,8 +45,9 @@ html,body{
 
 /* ── Top-scorers leaderboard ── */
 .scorers{display:flex;flex-direction:column;gap:16px;margin-top:79px;flex-shrink:0;}
+/* Ranks #2+ use the light-grey tile; the leader (#1) overrides to yellow below. */
 .scorer{
-  height:160px;background:var(--white);border-radius:10px;
+  height:160px;background:var(--light-grey);border-radius:10px;
   display:flex;align-items:center;gap:32px;padding:0 40px;
 }
 /* Golden-boot leader: yellow tile */

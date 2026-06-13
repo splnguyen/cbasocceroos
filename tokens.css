@@ -17,6 +17,7 @@
   --color-charcoal:      #3a3a3a;
   --color-dark-grey:     #727272;
   --color-mid-grey:      #9e9e9e;
+  --color-light-grey:    #c1c1c1;
   --color-off-black:     #212121;
   --color-red-bright:    #ff0000;
   --color-white:         #ffffff;
@@ -28,6 +29,7 @@
   --charcoal:      var(--color-charcoal);
   --dark-grey:     var(--color-dark-grey);
   --mid-grey:      var(--color-mid-grey);
+  --light-grey:    var(--color-light-grey);
   --off-black:     var(--color-off-black);
   --red-bright:    var(--color-red-bright);
   --white:         var(--color-white);
