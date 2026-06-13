@@ -249,6 +249,10 @@ const jitter = (ms) => Math.round(ms * (0.88 + Math.random() * 0.24));
 // opener: from 04:59am AEST we poll /api/live every 5 s instead of every 5 min).
 const PREKICKOFF_WINDOW_MS = 60 * 1000; // start ramping 60 s before kickoff
 const PREKICKOFF_POLL_MS   = 5 * 1000;  // …and poll every 5 s through that window
+// At kickoff we switch to Match Live and HOLD even before /api/live flips the
+// match to in-play (api-football lags real kickoff). Give up and resume the
+// carousel if no live data appears within this window (e.g. a postponed match).
+const POSTKICKOFF_WINDOW_MS = 15 * 60 * 1000;
 
 // ── Tournament phase boundaries (UTC instants) ────────────────
 // First WC 2026 match kicks off 5:00am AEST, 12 Jun 2026 (= 19:00 UTC, 11 Jun);
@@ -333,6 +337,8 @@ let liveGracePolls = 0;
 // Epoch (ms) of the next scheduled WC fixture's kickoff, or null if unknown.
 // Drives the pre-kickoff polling ramp (see nextPollDelay / refreshNextKickoff).
 let nextKickoffEpoch = null;
+let nextKickoffFixtureId = null;  // pin the upcoming match when we switch at kickoff
+let awaitingKickoff = false;      // on Match Live at kickoff, holding for live data
 
 // ═══════════════════════════════════════════════════════════════
 //  NAVIGATION
@@ -592,11 +598,15 @@ function enterCarouselMode() {
   if (!carouselPlaying && !carouselTimer) playCarousel();
 }
 
-function enterSingleMode() {
+function enterSingleMode(opts = {}) {
   liveMode = 'single';
   if (carouselPlaying || carouselTimer) pauseCarousel();
   // Single screen self-resolves the live fixture; poll it every LIVE_POLL_SEC.
-  goToScreen('match-live', { params: { poll: LIVE_POLL_SEC } });
+  // Pinning a fixtureId (at scheduled kickoff, before /api/live flips) shows the
+  // right match and keeps the src identical when it goes live → no reload/flash.
+  const params = { poll: LIVE_POLL_SEC };
+  if (opts.fixtureId != null) params.fixture = opts.fixtureId;
+  goToScreen('match-live', { params });
   updateStatus();
 }
 
@@ -621,11 +631,13 @@ async function refreshNextKickoff() {
     const data = await res.json();
     if (data.ok && data.fixture?.kickoffEpoch) {
       nextKickoffEpoch = data.fixture.kickoffEpoch;
+      nextKickoffFixtureId = data.fixture.fixtureId ?? null;
       return;
     }
   } catch (_) { /* fall through to the hard-coded fallback below */ }
   if (nextKickoffEpoch == null && Date.now() < FIRST_MATCH_KICKOFF) {
     nextKickoffEpoch = FIRST_MATCH_KICKOFF;
+    nextKickoffFixtureId = null;
   }
 }
 
@@ -663,32 +675,51 @@ async function checkLive() {
 
   if (count > 0) firstMatchHasStarted = true;
 
+  const now = Date.now();
+  const koReached    = nextKickoffEpoch != null && now >= nextKickoffEpoch;
+  const koWindowOver = nextKickoffEpoch != null && now >= nextKickoffEpoch + POSTKICKOFF_WINDOW_MS;
+
   // Stay on Match Live for the WHOLE match. A single empty/failed /api/live poll
   // (network blip or the ~15s api-football refresh gap) must not bounce the
   // display back to the carousel mid-match — only leave once several consecutive
   // empty polls confirm the match is actually over.
   let inGrace = false;
   if (count >= 1) {
+    awaitingKickoff = false;
     liveGracePolls = 0;
     if (count >= 2) enterPairMode(fixtures);
-    else            enterSingleMode();
-  } else if (liveMode !== 'none' && liveGracePolls < LIVE_GRACE_POLLS) {
-    liveGracePolls += 1;          // hold the live screen through the grace window
+    else            enterSingleMode({ fixtureId: fixtures[0]?.fixtureId });
+  } else if (liveMode !== 'none' && !awaitingKickoff && liveGracePolls < LIVE_GRACE_POLLS) {
+    liveGracePolls += 1;          // genuinely was live — ride out a blip
     inGrace = true;
+  } else if (koReached && !koWindowOver) {
+    // Scheduled kickoff reached but /api/live hasn't flipped the match live yet
+    // (api-football lags real kickoff by 0–2 min). Switch to Match Live NOW and
+    // hold it — fast polling catches the flip within seconds; pinning the
+    // upcoming fixtureId shows the right match and avoids a reload when it goes live.
+    awaitingKickoff = true;
+    liveGracePolls = 0;
+    enterSingleMode({ fixtureId: nextKickoffFixtureId });
   } else {
+    // Idle, or held empty past the post-kickoff window (match postponed) → carousel.
+    awaitingKickoff = false;
     liveGracePolls = 0;
     enterCarouselMode();
   }
 
   // When idle, keep the next-kickoff target fresh — refresh if we don't know it
-  // yet, or the one we had has passed (e.g. a match just ended → roll to the
-  // next fixture). Skipped while live or holding the live screen.
-  if (count === 0 && !inGrace && (nextKickoffEpoch == null || nextKickoffEpoch <= Date.now())) {
+  // yet, or the post-kickoff window has fully elapsed (match ended/postponed →
+  // roll to the next fixture). Skipped while live, in grace, or holding at kickoff
+  // so the ramp and empty-hold stay anchored to the match that's starting.
+  if (count === 0 && !inGrace && !awaitingKickoff && (nextKickoffEpoch == null || koWindowOver)) {
     await refreshNextKickoff();
   }
 
-  // Poll fast while a match is live or during the grace window (to re-confirm).
-  liveTimer = setTimeout(checkLive, jitter((count > 0 || inGrace) ? LIVE_POLL_MS : nextPollDelay(count)));
+  // Poll fast: 10 s while live/grace, 5 s while holding for a kickoff to flip.
+  const delay = (count > 0 || inGrace) ? LIVE_POLL_MS
+              : awaitingKickoff        ? PREKICKOFF_POLL_MS
+              :                          nextPollDelay(count);
+  liveTimer = setTimeout(checkLive, jitter(delay));
 }
 
 // ═══════════════════════════════════════════════════════════════
