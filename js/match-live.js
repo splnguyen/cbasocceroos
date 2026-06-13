@@ -56,14 +56,16 @@
   let awayId = null;
 
   // ── Match clock (mm:ss, ticks locally between API polls) ─────────────────
-  // api-football gives `elapsed` in whole minutes only. The proxy now sends a
-  // shared per-minute anchor (state.clock) so every display ticks from the SAME
-  // reference (assumes the screens' clocks are roughly NTP-synced, which office
-  // machines are). If the anchor is missing we fall back to the old local
-  // synthesis (record the minute + a local timestamp, count up each second).
-  let serverClock  = null;   // { minute, anchorMs } from the proxy (shared)
-  let clockBaseMin = null;   // legacy fallback: minutes from the API at last sync
-  let clockBaseTs  = 0;      // legacy fallback: Date.now() when that minute was received
+  // api-football reports `elapsed` in whole MINUTES only. We tick the seconds
+  // locally and re-sync to the API minute on each poll — but FORWARD-ONLY: the
+  // clock never rewinds. (An earlier version used a server-sent per-minute anchor,
+  // but that anchor lives in memory PER serverless instance, so polls landing on
+  // different instances returned different anchor times for the same minute and
+  // the clock jumped/rewound by up to a minute. Ticking locally + forward-only
+  // re-sync is monotonic, and because every display re-syncs to the same API
+  // minute they stay within a poll interval of each other.)
+  let clockSec     = null;   // displayed match-seconds (already minus the broadcast delay)
+  let clockTickMs  = 0;      // Date.now() at the last local advance
   let clockRunning = false;  // only ticks during live, in-play periods
 
   function setStatus(msg, isError = false) {
@@ -284,23 +286,25 @@
   function clockIsRunning(state) {
     return !!state.isLive && !/Half Time|Full Time|Penalties|AET/i.test(state.period || '');
   }
+  // Displayed time at the START of the current API minute, trailing by the
+  // broadcast delay (so the clock lines up with the delayed score/feed/TV).
+  function clockFloorSec(state) {
+    return (state.elapsed ?? 0) * 60 - Math.floor(DISPLAY_DELAY_MS / 1000);
+  }
   function syncClock(state) {
     clockRunning = clockIsRunning(state);
-    if (clockRunning && state.clock) {
-      // Shared server anchor — all displays count from the same reference.
-      serverClock = state.clock;
-    } else if (clockRunning) {
-      // Fallback: synthesise locally (re-baseline when the API minute advances).
-      serverClock = null;
-      const mins = state.elapsed ?? 0;
-      if (clockBaseMin === null || mins > clockBaseMin) {
-        clockBaseMin = mins;
-        clockBaseTs = Date.now();
-      }
-    } else {
-      serverClock = null;
-      clockBaseMin = state.elapsed ?? 0;
+    if (!clockRunning) { clockSec = null; renderClock(); return; }
+    const floor = clockFloorSec(state);
+    if (clockSec === null) {
+      clockSec = Math.max(0, floor);          // first sight → start at the minute floor
+    } else if (floor > clockSec) {
+      clockSec = floor;                       // API minute advanced past us → catch up FORWARD
+    } else if (clockSec - floor > 180) {
+      clockSec = Math.max(0, floor);          // huge gap (period reset/correction) → resync
     }
+    // Otherwise the API minute is at/just behind our ticking clock — keep ticking,
+    // NEVER rewind. (Stoppage time naturally ticks past the minute floor.)
+    clockTickMs = Date.now();
     renderClock();
   }
   function renderClock() {
@@ -309,20 +313,16 @@
     // At breaks (Half Time / Full Time / Penalties / AET) the clock isn't
     // ticking, so a frozen "45:00" / "90:00" would be misleading — hide it and
     // let the period text (e.g. "Half Time") stand on its own.
-    if (!clockRunning) { el.style.display = 'none'; return; }
+    if (!clockRunning || clockSec === null) { el.style.display = 'none'; return; }
     el.style.display = '';
-    let totalSec;
-    if (serverClock) {
-      // Subtract the broadcast delay so the clock trails the TV like the rest.
-      totalSec = serverClock.minute * 60 + Math.floor((Date.now() - serverClock.anchorMs - DISPLAY_DELAY_MS) / 1000);
-    } else if (clockBaseMin !== null) {
-      totalSec = clockBaseMin * 60 + Math.floor((Date.now() - clockBaseTs - DISPLAY_DELAY_MS) / 1000);
-    } else {
-      return;
-    }
-    if (totalSec < 0) totalSec = 0; // guard against a display clock running behind the server
-    const mm = Math.floor(totalSec / 60);
-    const ss = totalSec % 60;
+    // Advance by real elapsed wall-time since the last tick (smooth + drift-free
+    // even if the 1 s interval fires irregularly).
+    const now = Date.now();
+    clockSec += (now - clockTickMs) / 1000;
+    clockTickMs = now;
+    const total = Math.max(0, Math.floor(clockSec));
+    const mm = Math.floor(total / 60);
+    const ss = total % 60;
     el.textContent = `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
   }
 
