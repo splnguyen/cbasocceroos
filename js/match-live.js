@@ -459,6 +459,7 @@
   // ── Polling ──────────────────────────────────────────────────────────────
   let pollTimer = null;
   let liveState = null;
+  let firstRenderDone = false;   // first paint skips the broadcast delay (no blank warmup)
 
   function nextDelay() {
     const base = POLL_OVERRIDE_MS ? POLL_OVERRIDE_MS : (liveState?.isLive ? LIVE_POLL_MS : IDLE_POLL_MS);
@@ -498,8 +499,16 @@
         const delayTag = DISPLAY_DELAY_MS ? ` · +${DISPLAY_DELAY_MS / 1000}s` : '';
         setStatus(`Live · #${primary.fixtureId} · ${primary.home.name} v ${primary.away.name}${tag} · ${t} · poll ${cadence}${delayTag}`);
       };
-      if (DISPLAY_DELAY_MS > 0) setTimeout(apply, DISPLAY_DELAY_MS);
-      else apply();
+      // First paint renders immediately so a freshly-loaded screen (e.g. the
+      // carousel switching in at kickoff) shows data right away instead of
+      // sitting blank for the whole DISPLAY_DELAY_MS. Every later update keeps
+      // the broadcast delay so the screen still trails the TV feed.
+      if (DISPLAY_DELAY_MS > 0 && firstRenderDone) {
+        setTimeout(apply, DISPLAY_DELAY_MS);
+      } else {
+        apply();
+        firstRenderDone = true;
+      }
     } catch (err) {
       setStatus(`Error: ${err.message}`, true);
       console.error('[match-live]', err);
