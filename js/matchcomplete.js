@@ -65,6 +65,34 @@
     }
   }
 
+  // Shrink a team name until it fits within two lines and its column width.
+  // Short names stay at --name-base (the Figma size); only long names (e.g.
+  // "BOSNIA & HERZEGOVINA") step down so they wrap to two centred lines instead
+  // of overflowing and shoving the score row off-centre.
+  function fitTeamName(el) {
+    if (!el) return;
+    const cs = getComputedStyle(el);
+    const base = parseFloat(cs.getPropertyValue('--name-base')) || parseFloat(cs.fontSize);
+    const MIN = 22;
+    let size = base;
+    el.style.fontSize = size + 'px';
+    let guard = 0;
+    while (size > MIN && guard++ < 24) {
+      const lineH = size * 1.15;                       // generous, avoids off-by-one
+      const tooManyLines = el.scrollHeight > lineH * 2 + 2;
+      const tooWide = el.scrollWidth > el.clientWidth + 1; // a single word too wide to wrap
+      if (!tooManyLines && !tooWide) break;
+      size -= 2;
+      el.style.fontSize = size + 'px';
+    }
+  }
+  function fitTeamNames() {
+    fitTeamName($('name-home'));
+    fitTeamName($('name-away'));
+  }
+  // Re-fit once the brand font loads — measuring before it does gives wrong widths.
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitTeamNames);
+
   function render(state) {
     // Server-resolved winner accounts for penalty shootouts (PEN/AET/FT).
     const homeLoser = state.winner === 'away';
@@ -77,6 +105,7 @@
     $('score-away').textContent = state.scoreA ?? 0;
     $('name-home').textContent = (state.home.name || '').toUpperCase();
     $('name-away').textContent = (state.away.name || '').toUpperCase();
+    fitTeamNames();
     setFlag($('flag-home'), state.home.name, state.home.logo);
     setFlag($('flag-away'), state.away.name, state.away.logo);
     setFlag($('poss-flag-home'), state.home.name, state.home.logo);

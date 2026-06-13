@@ -48,7 +48,7 @@ html,body{
 .meta-r{text-align:right;}
 
 .score-section{display:flex;align-items:stretch;justify-content:space-between;gap:20px;flex-shrink:0;height:480px;margin-top:79px;}
-.team-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:30px;justify-content:space-between;}
+.team-col{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:30px;justify-content:space-between;}
 .score-num{font-size:300px;font-weight:800;line-height:0.7;color:var(--white);text-align:center;}
 .team-col.loser .score-num{color:var(--mid-grey);}
 .team-col.loser .team-name{color:var(--mid-grey);}
@@ -56,7 +56,10 @@ html,body{
 .team-avatar{display:flex;flex-direction:column;align-items:center;gap:30px;}
 .flag-circle{width:150px;height:150px;border-radius:50%;overflow:hidden;background:#444;flex-shrink:0;}
 .flag-circle img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
-.team-name{font-size:42px;font-weight:800;color:var(--white);text-transform:uppercase;text-align:center;white-space:nowrap;}
+/* Name wraps within the column (max-width caps it so a long name can't widen
+   its flex:1 column and shift the score row off-centre). matchcomplete.js
+   auto-shrinks long names to fit two lines; short names stay at --name-base. */
+.team-name{--name-base:42px;font-size:var(--name-base);font-weight:800;color:var(--white);text-transform:uppercase;text-align:center;line-height:1.1;max-width:300px;overflow-wrap:break-word;word-break:break-word;}
 .centre-col{width:260px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:space-between;}
 .vert-seg{width:16px;height:170px;background:var(--dark-grey);flex-shrink:0;}
 .result-block{display:flex;flex-direction:column;gap:16px;align-items:center;}

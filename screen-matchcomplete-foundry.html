@@ -47,15 +47,19 @@ html,body{
 .meta-r{text-align:right;}
 
 .score-section{display:flex;align-items:stretch;justify-content:space-between;gap:20px;flex-shrink:0;height:480px;margin-top:50px;}
-.team-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:30px;justify-content:space-between;}
-.score-num{font-size:300px;font-weight:800;line-height:0.7;color:var(--white);text-align:center;}
+.team-col{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:30px;justify-content:space-between;}
+/* Foundry score is H-Ultra 500px in Figma (÷2 = 250), smaller than office's 300. */
+.score-num{font-size:250px;font-weight:800;line-height:0.7;color:var(--white);text-align:center;}
 .team-col.loser .score-num{color:var(--mid-grey);}
 .team-col.loser .team-name{color:var(--mid-grey);}
 .team-col.loser .flag-circle img{filter:grayscale(1) opacity(0.55);}
 .team-avatar{display:flex;flex-direction:column;align-items:center;gap:30px;}
 .flag-circle{width:150px;height:150px;border-radius:50%;overflow:hidden;background:#444;flex-shrink:0;}
 .flag-circle img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
-.team-name{font-size:42px;font-weight:800;color:var(--white);text-transform:uppercase;text-align:center;white-space:nowrap;}
+/* Foundry name: H5 60px (÷2 = 30). Wraps within the column; matchcomplete.js
+   auto-shrinks long names to two lines (Figma shows BOSNIA & HERZEGOVINA wrapped
+   at 30px). max-width caps it so it can't widen its column and shift the row. */
+.team-name{--name-base:30px;font-size:var(--name-base);font-weight:800;color:var(--white);text-transform:uppercase;text-align:center;line-height:1.1;letter-spacing:1.5px;max-width:300px;overflow-wrap:break-word;word-break:break-word;}
 .centre-col{width:260px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:space-between;}
 .vert-seg{width:16px;height:170px;background:var(--dark-grey);flex-shrink:0;}
 .result-block{display:flex;flex-direction:column;gap:16px;align-items:center;}
@@ -75,17 +79,19 @@ html,body{
 
 /* Match Feed: left = 4×2 fixed stat cards (485.5px), right = performers (454.5px) */
 .bottom-grid{
-  display:grid;grid-template-columns:485.5px 454.5px;gap:20px;
+  display:grid;grid-template-columns:485.5px 444.5px;gap:30px;
   height:460px;margin-top:44px;flex-shrink:0;
 }
 .stats-grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(4,100px);gap:20px;}
 .stat-card{
   background:var(--charcoal);border-radius:10px;padding:18px;
-  display:flex;flex-direction:column;justify-content:center;gap:21px;
+  display:flex;flex-direction:column;justify-content:center;gap:16px;
 }
 .stat-label{font-size:18px;font-weight:800;letter-spacing:0.9px;color:var(--white);text-align:center;text-transform:uppercase;}
 .stat-vals{display:flex;align-items:center;justify-content:space-between;}
-.stat-vals .stat-h,.stat-vals .stat-a{font-size:42px;font-weight:800;line-height:1;flex:1;}
+/* Foundry values are H5 60px (÷2 = 30) — smaller than office's H4 42px — so the
+   digits sit cleanly in the shorter 100px card instead of overflowing it. */
+.stat-vals .stat-h,.stat-vals .stat-a{font-size:30px;font-weight:800;line-height:1;letter-spacing:2px;flex:1;}
 .stat-vals .stat-h{text-align:left;color:var(--white);}
 .stat-vals .stat-a{text-align:right;color:var(--mid-grey);}
 .stat-sep{width:3px;height:34px;background:var(--white);margin:0 8px;flex-shrink:0;}
