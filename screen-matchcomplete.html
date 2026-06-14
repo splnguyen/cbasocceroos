@@ -43,7 +43,7 @@ html,body{
   display:flex;justify-content:space-between;align-items:baseline;gap:24px;
 }
 
-.meta-row{color:var(--white);}
+.meta-row{color:var(--brand-yellow);}
 .meta-l{text-align:left;}
 .meta-r{text-align:right;}
 
@@ -89,7 +89,9 @@ html,body{
 }
 .stat-label{font-size:18px;font-weight:800;letter-spacing:0.9px;color:var(--white);text-align:center;text-transform:uppercase;}
 .stat-vals{display:flex;align-items:center;justify-content:space-between;}
-.stat-vals .stat-h,.stat-vals .stat-a{font-size:42px;font-weight:800;line-height:1;flex:1;}
+/* Stat values stepped down H4→H5 (42→30px): the H4 size left "PASS ACCURACY"
+   cramped once the % sign is appended. Matches the foundry variant. */
+.stat-vals .stat-h,.stat-vals .stat-a{font-size:30px;font-weight:800;line-height:1;flex:1;}
 .stat-vals .stat-h{text-align:left;color:var(--white);}
 .stat-vals .stat-a{text-align:right;color:var(--mid-grey);}
 .stat-sep{width:3px;height:34px;background:var(--white);margin:0 8px;flex-shrink:0;}

@@ -64,7 +64,7 @@
   // the clock jumped/rewound by up to a minute. Ticking locally + forward-only
   // re-sync is monotonic, and because every display re-syncs to the same API
   // minute they stay within a poll interval of each other.)
-  let clockSec     = null;   // displayed match-seconds (already minus the broadcast delay)
+  let clockSec     = null;   // displayed match-seconds (baselined at the API minute; the broadcast delay is applied to the paint timing, not here)
   let clockTickMs  = 0;      // Date.now() at the last local advance
   let clockRunning = false;  // only ticks during live, in-play periods
 
@@ -286,10 +286,18 @@
   function clockIsRunning(state) {
     return !!state.isLive && !/Half Time|Full Time|Penalties|AET/i.test(state.period || '');
   }
-  // Displayed time at the START of the current API minute, trailing by the
-  // broadcast delay (so the clock lines up with the delayed score/feed/TV).
+  // Displayed time at the START of the current API minute.
+  // NOTE: do NOT subtract the broadcast delay here. The whole `state` (score,
+  // feed, synthetic ticker rows AND this elapsed) is already held back by
+  // DISPLAY_DELAY_MS via the setTimeout(apply, …) in tick(), so the delay is
+  // applied once, to the timing of the paint. The ticker rows carry their raw
+  // match minute (a corner at minute 11 is labelled 11'); subtracting the delay
+  // here too would baseline the clock ~80s behind those labels, so the clock
+  // would read 10:45 next to an 11' event. Baselining at elapsed*60 keeps the
+  // clock minute ≥ every event minute in the same state (each event's
+  // time.elapsed ≤ state.elapsed), so the ticker can never lead the clock.
   function clockFloorSec(state) {
-    return (state.elapsed ?? 0) * 60 - Math.floor(DISPLAY_DELAY_MS / 1000);
+    return (state.elapsed ?? 0) * 60;
   }
   function syncClock(state) {
     clockRunning = clockIsRunning(state);

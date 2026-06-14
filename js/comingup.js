@@ -71,12 +71,19 @@
   }
 
   // ── Render ───────────────────────────────────────────────────────────────
+  // Cap the displayed country name so a long one (e.g. "Bosnia & Herzegovina")
+  // can't widen the left column and push the stats/points row out of alignment.
+  // 14 chars + ellipsis → "BOSNIA & HERZE...".
+  function truncName(name) {
+    const s = (name || '').toUpperCase();
+    return s.length > 14 ? s.slice(0, 14) + '...' : s;
+  }
   function rowHtml(t) {
     return `
       <div class="grow grow--${t.status}">
         <div class="grow-left">
           <div class="grow-flag"><img alt="${t.name}"></div>
-          <div class="grow-code">${(t.name || '').toUpperCase()}</div>
+          <div class="grow-code">${truncName(t.name)}</div>
         </div>
         <div class="grow-stats">
           <span>${t.played}</span>

@@ -65,23 +65,34 @@
     }
   }
 
-  // Shrink a team name until it fits within two lines and its column width.
-  // Short names stay at --name-base (the Figma size); only long names (e.g.
-  // "BOSNIA & HERZEGOVINA") step down so they wrap to two centred lines instead
-  // of overflowing and shoving the score row off-centre.
+  // Shrink a team name until it fits its column. Short names stay at
+  // --name-base (the Figma size); long names step down so they don't overflow
+  // and shove the score row off-centre.
+  // - Multi-word names (e.g. "BOSNIA & HERZEGOVINA") may wrap to two centred
+  //   lines, breaking only at the space.
+  // - Single-word names (e.g. "SWITZERLAND") must stay on ONE line — never split
+  //   mid-word — so we force nowrap and shrink purely to fit the width.
   function fitTeamName(el) {
     if (!el) return;
     const cs = getComputedStyle(el);
     const base = parseFloat(cs.getPropertyValue('--name-base')) || parseFloat(cs.fontSize);
     const MIN = 22;
+    const singleWord = !/\s/.test((el.textContent || '').trim());
+    el.style.whiteSpace = singleWord ? 'nowrap' : '';   // reset each call
     let size = base;
     el.style.fontSize = size + 'px';
     let guard = 0;
     while (size > MIN && guard++ < 24) {
-      const lineH = size * 1.15;                       // generous, avoids off-by-one
-      const tooManyLines = el.scrollHeight > lineH * 2 + 2;
-      const tooWide = el.scrollWidth > el.clientWidth + 1; // a single word too wide to wrap
-      if (!tooManyLines && !tooWide) break;
+      const tooWide = el.scrollWidth > el.clientWidth + 1;
+      let fits;
+      if (singleWord) {
+        fits = !tooWide;                                // one line, just fit the width
+      } else {
+        const lineH = size * 1.15;                      // generous, avoids off-by-one
+        const tooManyLines = el.scrollHeight > lineH * 2 + 2;
+        fits = !tooManyLines && !tooWide;
+      }
+      if (fits) break;
       size -= 2;
       el.style.fontSize = size + 'px';
     }

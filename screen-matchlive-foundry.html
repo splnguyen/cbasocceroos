@@ -36,19 +36,26 @@ html,body{
   font-size:64px;font-weight:800;line-height:68px;letter-spacing:3.2px;
   color:var(--brand-yellow);
 }
-/* Foundry data-recency chip (Figma 770:855): black pill, yellow label.
-   Text is driven by js below off the same poll status match-live.js writes. */
-.recency-chip{
-  background:var(--badge-updated-bg);
-  color:var(--badge-updated-text);
+/* LIVE chip: white pill, red dot + red label (matches the office matchlive). */
+.live-chip{
+  background:var(--white);
+  display:flex;align-items:center;gap:12px;
   padding:16px;border-radius:6px;
-  font-size:24px;font-weight:800;letter-spacing:1.2px;
   white-space:nowrap;flex-shrink:0;
 }
-/* "fresh" = just polled: invert to the high-contrast yellow fill briefly. */
-.recency-chip.fresh{background:var(--badge-fresh-bg);color:var(--badge-fresh-text);}
-/* "stale" = polls failing / data delayed. */
-.recency-chip.stale{background:var(--badge-updated-bg);color:var(--mid-grey);}
+/* Pulse the dot slightly so the badge has a little life. */
+.live-dot{
+  width:24px;height:24px;border-radius:50%;background:var(--red-bright);
+  animation:live-pulse 1.6s ease-in-out infinite;
+}
+@keyframes live-pulse{
+  0%,100%{transform:scale(1);opacity:1;}
+  50%{transform:scale(0.82);opacity:0.65;}
+}
+.live-word{
+  font-size:24px;font-weight:800;letter-spacing:1.2px;
+  color:var(--red-bright);text-transform:uppercase;
+}
 .meta-section{display:flex;flex-direction:column;gap:20px;height:108px;}
 .div-thick{width:100%;height:16px;background:var(--white);flex-shrink:0;}
 .meta-row{
@@ -255,7 +262,7 @@ html,body{
   <div class="header-block">
     <div class="top-row">
       <div class="page-title">Now<br>Playing</div>
-      <div class="recency-chip" id="recency-chip">Just updated</div>
+      <div class="live-chip"><span class="live-dot"></span><span class="live-word">LIVE</span></div>
     </div>
     <div class="meta-section">
       <div class="div-thick"></div>
@@ -321,35 +328,4 @@ html,body{
 
 <script src="js/flag-global.js"></script>
 <script src="js/match-live.js" defer></script>
-<script>
-// ── Data-recency chip ──────────────────────────────────────────────────────
-// match-live.js doesn't know about this chip, so we stay non-invasive: watch
-// the #api-status line it rewrites on every poll. A successful poll ("Live · …")
-// re-stamps the chip; an "Error:" marks it stale. A 1s ticker counts the age up
-// so the chip reads "Just updated" → "Updated Ns ago" → "Updated Nm ago".
-(function () {
-  const chip = document.getElementById('recency-chip');
-  const status = document.getElementById('api-status');
-  if (!chip || !status) return;
-  let lastOkTs = null;
-
-  function paint() {
-    if (lastOkTs == null) { chip.textContent = 'Connecting…'; chip.className = 'recency-chip stale'; return; }
-    const age = Math.floor((Date.now() - lastOkTs) / 1000);
-    if (age < 5)        { chip.textContent = 'Just updated';        chip.className = 'recency-chip fresh'; }
-    else if (age < 90)  { chip.textContent = `Updated ${age}s ago`; chip.className = 'recency-chip'; }
-    else                { chip.textContent = `Updated ${Math.floor(age / 60)}m ago`; chip.className = 'recency-chip stale'; }
-  }
-
-  function onStatus() {
-    const t = status.textContent || '';
-    if (t.startsWith('Live')) { lastOkTs = Date.now(); paint(); }
-    else if (t.startsWith('Error')) { chip.textContent = 'Reconnecting…'; chip.className = 'recency-chip stale'; }
-  }
-
-  new MutationObserver(onStatus).observe(status, { childList: true, characterData: true, subtree: true });
-  onStatus();
-  setInterval(paint, 1000);
-})();
-</script>
 </body></html>
