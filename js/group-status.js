@@ -56,6 +56,14 @@
 
   // ── Rendering ──────────────────────────────────────────────────────────────
 
+  // Goal difference with explicit sign (FIFA convention: +5, 0, −3).
+  function gdLabel(gd) {
+    const n = Number(gd) || 0;
+    if (n > 0) return `+${n}`;
+    if (n < 0) return `−${Math.abs(n)}`; // U+2212 minus, matches the design font
+    return '0';
+  }
+
   function sortTeams(teams) {
     return [...teams].sort((a, b) => {
       const s = STATUS_RANK[a.status] - STATUS_RANK[b.status];
@@ -80,6 +88,7 @@
           <span class="gs-reg">${team.w}</span>
           <span class="gs-reg">${team.d}</span>
           <span class="gs-reg">${team.l}</span>
+          <span class="gs-reg">${gdLabel(team.gd)}</span>
           <span class="gs-pts">${team.pts}</span>
         </div>
       </div>`;
@@ -92,7 +101,7 @@
         <div class="gtitle">Group ${letter}</div>
         <div class="gdivider"></div>
         <div class="gcols">
-          <span>MP</span><span>W</span><span>D</span><span>L</span><span>PTS</span>
+          <span>MP</span><span>W</span><span>D</span><span>L</span><span>GD</span><span>PTS</span>
         </div>
         <div class="grows">${rows}</div>
       </div>`;
@@ -110,7 +119,7 @@
   // A single pulsing skeleton row (matches .grow height so nothing jumps when
   // real data replaces it).
   function skeletonRowHtml() {
-    const cells = `<span class="gs-sk-cell"><i class="gs-sk gs-sk--stat"></i></span>`.repeat(5);
+    const cells = `<span class="gs-sk-cell"><i class="gs-sk gs-sk--stat"></i></span>`.repeat(6);
     return `
       <div class="grow grow--skeleton">
         <div class="grow-left">
@@ -128,7 +137,7 @@
         <div class="gtitle">Group ${letter}</div>
         <div class="gdivider"></div>
         <div class="gcols">
-          <span>MP</span><span>W</span><span>D</span><span>L</span><span>PTS</span>
+          <span>MP</span><span>W</span><span>D</span><span>L</span><span>GD</span><span>PTS</span>
         </div>
         <div class="grows">${rows}</div>
       </div>`;
