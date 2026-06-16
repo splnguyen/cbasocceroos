@@ -75,12 +75,17 @@
       root.innerHTML = '<div class="scorers-empty">No keeper stats yet</div>';
       return;
     }
+    // Golden Glove leader = fewest conceded. Highlight ALL co-leaders tied on
+    // that lowest tally (the list is sorted ascending, already gated to keepers
+    // who've actually played), not just rank 1. Zero conceded is a valid lead.
+    const leadConceded = list[0]?.conceded ?? 0;
     root.innerHTML = list.map((k) => {
       const photo = k.photo ? `<img src="${esc(k.photo)}" alt="">` : '';
       const flag = k.teamLogo ? `<img src="${esc(k.teamLogo)}" alt="">` : '';
       const saves = `${k.saves ?? 0} Save${(k.saves ?? 0) === 1 ? '' : 's'}`;
+      const isLead = (k.conceded ?? 0) === leadConceded;
       return `
-        <div class="scorer${k.rank === 1 ? ' scorer--lead' : ''}">
+        <div class="scorer${isLead ? ' scorer--lead' : ''}">
           <div class="scorer-rank">${k.rank}</div>
           <div class="scorer-photo">${photo}<span class="scorer-flag">${flag}</span></div>
           <div class="scorer-id">

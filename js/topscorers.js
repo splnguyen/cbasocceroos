@@ -74,14 +74,19 @@
       root.innerHTML = '<div class="scorers-empty">No goals scored yet</div>';
       return;
     }
+    // Golden Boot leader = most goals. Highlight ALL co-leaders tied on that
+    // top tally (the list is sorted descending), not just rank 1. Guard on >0 so
+    // a board of goalless players isn't painted entirely gold.
+    const leadGoals = list[0]?.goals ?? 0;
     root.innerHTML = list.map((s) => {
       const photo = s.photo ? `<img src="${esc(s.photo)}" alt="">` : '';
       const flag = s.teamLogo ? `<img src="${esc(s.teamLogo)}" alt="">` : '';
       const assists = s.assists
         ? `${s.assists} Assist${s.assists > 1 ? 's' : ''}`
         : 'No assists';
+      const isLead = leadGoals > 0 && (s.goals ?? 0) === leadGoals;
       return `
-        <div class="scorer${s.rank === 1 ? ' scorer--lead' : ''}">
+        <div class="scorer${isLead ? ' scorer--lead' : ''}">
           <div class="scorer-rank">${s.rank}</div>
           <div class="scorer-photo">${photo}<span class="scorer-flag">${flag}</span></div>
           <div class="scorer-id">
