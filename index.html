@@ -189,6 +189,8 @@ html, body {
 <!-- teamCode()/FLAG_MAP — used by the concurrent-pair matcher below to identify
      live fixtures by FIFA team code (no side effects on load). -->
 <script src="js/flag-global.js"></script>
+<!-- scheduleDailyReload() — 4am AEST self-reload so deploys reach the displays. -->
+<script src="js/daily-reload.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════
 //  SCREEN REGISTRY
@@ -806,6 +808,10 @@ document.addEventListener('keydown', (e) => {
 
 updateStatus();
 checkLive();
+
+// Reload at ~4am AEST daily so deployed changes apply without a manual refresh;
+// defers while a match is on screen.
+scheduleDailyReload({ isLive: () => liveMode !== 'none' });
 </script>
 </body>
 </html>

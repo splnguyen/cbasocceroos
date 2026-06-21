@@ -55,6 +55,7 @@ html, body { width: 1080px; height: 1920px; overflow: hidden; background: var(--
      scored (driven by postMessage from the match-live screen). -->
 <iframe id="goal-frame" title="Goal overlay" style="display:none;position:absolute;inset:0;width:1080px;height:1920px;border:none;z-index:100;pointer-events:none;"></iframe>
 
+<script src="js/daily-reload.js"></script>
 <script>
 // ── Foundry 1 controller ──────────────────────────────────────────────────
 // Mirrors the office-1/2 live state machine (index.html): rotate a phase
@@ -340,6 +341,10 @@ function showGoalOverlay(scorerText) {
 }
 
 checkLive();
+
+// Reload at ~4am AEST daily so deployed changes apply without a manual refresh;
+// defers while a live match is on screen.
+scheduleDailyReload({ isLive: () => liveMode });
 </script>
 </body>
 </html>

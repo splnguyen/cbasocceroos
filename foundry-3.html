@@ -19,6 +19,7 @@ html, body { width: 1080px; height: 1920px; overflow: hidden; background: #000; 
 <body>
 <iframe id="screen-frame" src="screen-groupstatus-foundry-2.html" title="Foundry 3 screen"></iframe>
 
+<script src="js/daily-reload.js"></script>
 <script>
 // ── Foundry 3 carousel ────────────────────────────────────────────────────
 const playlist = [
@@ -39,6 +40,9 @@ function advance() {
 if (playlist.length > 1) {
   setInterval(advance, SLIDE_DURATION_MS);
 }
+
+// Reload at ~4am AEST daily so deployed changes apply without a manual refresh.
+scheduleDailyReload();
 </script>
 </body>
 </html>
