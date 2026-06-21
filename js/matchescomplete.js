@@ -137,12 +137,15 @@
     return '0';
   }
 
-  function rowHtml(t) {
+  // `solo` → only one group card is shown (both results share a group), so it
+  // spans the full width — use the full country name instead of the 3-letter code.
+  function rowHtml(t, solo) {
+    const label = solo ? (t.name || '').toUpperCase() : teamCode(t.name);
     return `
       <div class="grow grow--${t.status}">
         <div class="grow-left">
           <div class="grow-flag"><img alt="${t.name}"></div>
-          <div class="grow-code">${teamCode(t.name)}</div>
+          <div class="grow-code">${label}</div>
         </div>
         <div class="grow-stats">
           <span class="gs-reg">${t.mp}</span>
@@ -155,7 +158,7 @@
       </div>`;
   }
 
-  function groupCardHtml(group) {
+  function groupCardHtml(group, solo) {
     const sorted = [...group.teams].sort((a, b) => {
       const s = STATUS_RANK[a.status] - STATUS_RANK[b.status];
       if (s !== 0) return s;
@@ -164,13 +167,13 @@
       return b.gf - a.gf;
     });
     return `
-      <div class="gcard">
+      <div class="gcard${solo ? ' gcard--solo' : ''}">
         <div class="gtitle">GROUP ${group.letter}</div>
         <div class="gdivider"></div>
         <div class="gcols">
           <span>MP</span><span>W</span><span>D</span><span>L</span><span class="gs-gd">GD</span><span>PTS</span>
         </div>
-        <div class="grows">${sorted.map(rowHtml).join('')}</div>
+        <div class="grows">${sorted.map((t) => rowHtml(t, solo)).join('')}</div>
       </div>`;
   }
 
@@ -187,7 +190,9 @@
     let pair = letters.map((L) => byLetter.get(L));
     // Fallback (e.g. knockout matches carry no group letter): first 2 groups.
     if (!pair.length) pair = groups.slice(0, 2);
-    root.innerHTML = pair.map(groupCardHtml).join('');
+    // A single card spans the full width → room for full country names.
+    const solo = pair.length === 1;
+    root.innerHTML = pair.map((g) => groupCardHtml(g, solo)).join('');
     root.querySelectorAll('.grow-flag img').forEach((img) => setFlag(img, img.alt, null));
   }
 

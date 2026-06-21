@@ -291,12 +291,13 @@ const PHASE_PLAYLISTS = {
   ],
 };
 
-// Office-specific group-stage carousels (idle rotation when no match is live):
-//   Office 1 → Recently Completed (pair) → Upcoming (pair) → Top Scorers → Top Keepers
-//   Office 2 → Group Stage A–F → Group Stage G–L → Upcoming (pair)
+// Office-specific group-stage carousels (idle rotation when no match is live).
+// 'match-complete' = single-match recap (key stats from the very latest match).
+//   Office 1 → Recently Completed (pair) → Match Complete → Upcoming (pair) → Top Scorers → Top Keepers
+//   Office 2 → Group Stage A–F → Group Stage G–L → Match Complete → Upcoming (pair)
 const GROUP_STAGE_PLAYLISTS = {
-  1: ['matches-complete', 'comingup-two', 'top-scorers', 'top-keepers'],
-  2: ['group-status-1', 'group-status-2', 'comingup-two'],
+  1: ['matches-complete', 'match-complete', 'comingup-two', 'top-scorers', 'top-keepers'],
+  2: ['group-status-1', 'group-status-2', 'match-complete', 'comingup-two'],
 };
 
 function getPhase() {
