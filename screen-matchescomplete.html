@@ -44,10 +44,15 @@ html,body{
 .meta-row{color:var(--brand-yellow);}
 /* Vertical rhythm: 79px header→results, 70px between feed blocks */
 .results-stack{display:flex;flex-direction:column;gap:70px;flex-shrink:0;margin-top:79px;}
-.result-block{display:flex;flex-direction:column;gap:40px;align-items:center;}
+/* Score sits evenly between the date and the flags — EQUAL VISUAL space above
+   and below the number. The score's line-height:0.7 makes the digit ink ride
+   high in its box, so the box gaps are deliberately asymmetric (69 above / 31
+   below) to land equal ink-to-date and ink-to-flag gaps (~48px each). Their sum
+   is unchanged, so the date and flag rows don't move. */
+.result-block{display:flex;flex-direction:column;gap:69px;align-items:center;}
 .result-date{font-size:32px;line-height:0.7;font-weight:800;letter-spacing:3.2px;color:var(--brand-yellow);text-transform:uppercase;text-align:center;}
 .result-row{display:flex;align-items:flex-start;justify-content:center;gap:60px;width:100%;}
-.result-team{width:230px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:60px;}
+.result-team{width:230px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:31px;}
 .result-team.loser .result-score{color:var(--mid-grey);}
 .result-team.loser .result-name{color:var(--mid-grey);}
 .result-team.loser .result-flag img{filter:grayscale(1) opacity(0.55);}
