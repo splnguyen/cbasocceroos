@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=1080">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="typography.css">
+<link rel="stylesheet" href="fonts.css">
+<title>Latest Matches — Foundry</title>
+<!--
+  Foundry "Latest Matches / Recently Completed" — Figma node 2048-6826.
+  Reuses js/matchescomplete.js unchanged (same #results-stack / #standings-pair /
+  #updatedBadge ids and result-*/gcard markup as the office screen). This file
+  only supplies Foundry-scaled CSS + the foundry chrome (160px top pad, 64px
+  brand-yellow title, "Just updated" data-recency chip, shared fonts.css).
+  The GD column comes for free from matchescomplete.js's group cards — the Figma
+  mock predates it, but we include it so every group table matches.
+-->
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{
+  width:1080px;height:1920px;overflow:hidden;
+  background:var(--off-black);
+  font-family:'CBABeaconSans',sans-serif;
+  color:var(--white);
+}
+/* Top padding 160px matches the other foundry screens so titles line up across
+   the carousel (Figma pt-320 ÷2). */
+.screen{width:1080px;height:1920px;padding:160px 60px 60px;display:flex;flex-direction:column;overflow:hidden;}
+
+/* ── Header ───────────────────────────────────────────────────────────────── */
+.header-block{display:flex;flex-direction:column;gap:35px;flex-shrink:0;}
+.top-row{display:flex;align-items:flex-start;justify-content:space-between;}
+.page-title{font-size:64px;font-weight:800;line-height:68px;letter-spacing:3.2px;color:var(--brand-yellow);}
+.badge{
+  background:var(--black);color:var(--brand-yellow);
+  font-size:24px;font-weight:800;letter-spacing:1.2px;
+  padding:16px;border-radius:6px;white-space:nowrap;flex-shrink:0;
+}
+.header-sub{display:flex;flex-direction:column;gap:20px;}
+.div-thick{width:100%;height:16px;background:var(--white);flex-shrink:0;}
+.meta-row{font-size:48px;font-weight:800;letter-spacing:2.4px;color:var(--brand-yellow);text-transform:uppercase;}
+
+/* ── Recent results (2 big FT score cards) ────────────────────────────────── */
+.results-stack{display:flex;flex-direction:column;gap:40px;flex-shrink:0;margin-top:50px;}
+.result-block{display:flex;flex-direction:column;gap:30px;align-items:center;padding:0 60px;width:100%;}
+.result-date{font-size:24px;font-weight:800;letter-spacing:2.4px;color:var(--brand-yellow);text-transform:uppercase;text-align:center;}
+.result-row{display:flex;align-items:stretch;justify-content:center;gap:60px;width:100%;}
+.result-team{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:40px;}
+.result-team.loser .result-score{color:var(--mid-grey);}
+.result-team.loser .result-name{color:var(--mid-grey);}
+.result-team.loser .result-flag img{filter:grayscale(1) opacity(0.55);}
+/* Foundry score: Largish 320px ÷2 = 160. */
+.result-score{font-size:160px;font-weight:800;line-height:0.8;letter-spacing:8px;color:var(--white);text-align:center;}
+.result-avatar{display:flex;flex-direction:column;align-items:center;gap:30px;}
+.result-flag{width:70px;height:70px;border-radius:50%;overflow:hidden;background:#444;flex-shrink:0;}
+.result-flag img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.result-name{font-size:30px;font-weight:800;letter-spacing:2.4px;color:var(--white);text-transform:uppercase;text-align:center;white-space:nowrap;}
+/* Centre column: white vertical bars (foundry) filling the row height, FT centred. */
+.result-centre{width:260px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:space-between;}
+.result-centre .vert-seg{width:16px;background:var(--white);flex:1;min-height:24px;}
+.result-ft{font-size:60px;font-weight:800;letter-spacing:3px;color:var(--white);padding:16px 0;}
+.results-empty{color:var(--mid-grey);font-size:24px;text-align:center;padding:20px 0;}
+
+/* ── Group tables (one per displayed match: recent → left) ────────────────── */
+.standings-pair{display:flex;gap:20px;flex-shrink:0;margin-top:50px;}
+.gcard{flex:1;background:var(--charcoal);border-radius:10px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:15px;}
+.gtitle{font-size:24px;font-weight:800;letter-spacing:2.4px;color:var(--brand-yellow);text-transform:uppercase;text-align:center;}
+.gdivider{width:100%;height:7px;background:var(--mid-grey);}
+.gcols{display:flex;justify-content:flex-end;width:100%;padding:0 10px;}
+.gcols span{font-size:18px;font-weight:800;letter-spacing:0.9px;color:var(--white);text-transform:uppercase;width:37px;text-align:center;}
+.gcols span + span{margin-left:10px;}
+/* GD column right-aligned with a gap before PTS so +/−/0 line up cleanly. */
+.gcols .gs-gd,.grow-stats .gs-gd{text-align:right;margin-right:8px;}
+.grows{display:flex;flex-direction:column;gap:8px;width:100%;}
+.grow{height:50px;border-radius:10px;padding:0 10px;display:flex;align-items:center;justify-content:space-between;gap:30px;}
+.grow--qualified{background:var(--white);color:var(--off-black);}
+.grow--contention{background:var(--mid-grey);color:var(--off-black);}
+.grow--eliminated{background:var(--dark-grey);color:var(--white);}
+.grow-left{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.grow-flag{width:40px;height:40px;border-radius:50%;overflow:hidden;background:#444;flex-shrink:0;}
+.grow-flag img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.grow-code{font-size:24px;font-weight:800;letter-spacing:2.64px;text-transform:uppercase;}
+.grow-stats{display:flex;justify-content:flex-end;}
+.grow-stats span{font-size:24px;font-weight:400;width:37px;text-align:center;letter-spacing:1.2px;}
+.grow-stats .gs-pts{font-weight:800;} /* PTS is the only bold stat */
+.grow-stats span + span{margin-left:10px;}
+</style>
+</head><body>
+<div class="screen">
+  <div class="header-block">
+    <div class="top-row">
+      <div class="page-title">Latest<br>Matches</div>
+      <div class="badge" id="updatedBadge">Just updated</div>
+    </div>
+    <div class="header-sub">
+      <div class="div-thick"></div>
+      <div class="meta-row">Group Stage</div>
+      <div class="div-thick"></div>
+    </div>
+  </div>
+
+  <div class="results-stack" id="results-stack"></div>
+
+  <div class="standings-pair" id="standings-pair"></div>
+</div>
+<script src="js/flag-global.js"></script>
+<script src="js/matchescomplete.js" defer></script>
+</body></html>

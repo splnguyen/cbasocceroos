@@ -205,6 +205,7 @@ const SCREENS = [
   { id: 'tournament-countdown',label: 'Tournament Countdown',      src: 'screen-tournament-countdown.html', urlParam: null },
   { id: 'tournament-draw',     label: 'Tournament Draw',           src: 'screen-tournament-draw.html',    urlParam: null },
   { id: 'top-scorers',         label: 'Top Scorers',               src: 'screen-topscorers.html',         urlParam: null },
+  { id: 'top-keepers',         label: 'Top Keepers',               src: 'screen-topkeepers.html',         urlParam: null },
   // ── Upcoming — Group Stage ────────────────────────────────────
   { id: 'comingup-single',     label: 'Coming Up — Single',        src: 'screen-comingup.html',           urlParam: null },
   { id: 'comingup-two',        label: 'Coming Up — Two Matches',   src: 'screen-comingup-two.html',       urlParam: null },
@@ -290,13 +291,12 @@ const PHASE_PLAYLISTS = {
   ],
 };
 
-// Office-specific group-stage carousels (set after the first match — will
-// expand once more matches have been played):
-//   Office 1 → Recently Completed → Next Match Upcoming
-//   Office 2 → Group Stage A–F → Group Stage G–L
+// Office-specific group-stage carousels (idle rotation when no match is live):
+//   Office 1 → Recently Completed (pair) → Upcoming (pair) → Top Scorers → Top Keepers
+//   Office 2 → Group Stage A–F → Group Stage G–L → Upcoming (pair)
 const GROUP_STAGE_PLAYLISTS = {
-  1: ['match-complete', 'comingup-single'],
-  2: ['group-status-1', 'group-status-2'],
+  1: ['matches-complete', 'comingup-two', 'top-scorers', 'top-keepers'],
+  2: ['group-status-1', 'group-status-2', 'comingup-two'],
 };
 
 function getPhase() {

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=1080">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="typography.css">
+<link rel="stylesheet" href="fonts.css">
+<title>Top Scorers — Foundry</title>
+<!--
+  Foundry "Top Scorers" (Golden Boot). Reuses js/topscorers.js unchanged (same
+  #scorers / #updatedBadge ids and .scorer* row markup as the office screen).
+  Foundry chrome: shared fonts.css (no inline base64) + larger top/bottom margins
+  than the office version (160px top like the other foundry screens, 120px bottom
+  vs the office's dense 60px). Rows shrink to 140px so all 8 still fit.
+-->
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{
+  width:1080px;height:1920px;overflow:hidden;
+  background:var(--off-black);
+  font-family:'CBABeaconSans',sans-serif;
+  color:var(--white);
+}
+/* Larger margins than the office leaderboard: 160px top (matches the other
+   foundry screens), 120px bottom — both bigger than the office's 60px. */
+.screen{width:1080px;height:1920px;padding:160px 60px 120px;display:flex;flex-direction:column;overflow:hidden;}
+
+/* ── Header ── */
+.header-block{display:flex;flex-direction:column;gap:35px;flex-shrink:0;}
+.top-row{display:flex;align-items:flex-start;justify-content:space-between;}
+.page-title{font-size:64px;font-weight:800;line-height:68px;letter-spacing:3.2px;color:var(--brand-yellow);}
+.badge{
+  background:var(--black);color:var(--brand-yellow);
+  font-size:24px;font-weight:800;letter-spacing:1.2px;
+  padding:16px;border-radius:6px;white-space:nowrap;flex-shrink:0;
+}
+.header-sub{display:flex;flex-direction:column;gap:20px;}
+.div-thick{width:100%;height:16px;background:var(--white);flex-shrink:0;}
+.meta-row{font-size:48px;font-weight:800;letter-spacing:2.4px;color:var(--brand-yellow);}
+
+/* ── Leaderboard (rows shrunk from the office's 160px to fit the bigger margins) ── */
+.scorers{display:flex;flex-direction:column;gap:16px;margin-top:50px;flex-shrink:0;}
+.scorer{height:140px;background:var(--light-grey);border-radius:10px;display:flex;align-items:center;gap:32px;padding:0 40px;}
+.scorer--lead{background:var(--brand-yellow);}
+.scorer-rank{font-size:56px;font-weight:800;line-height:1;color:var(--off-black);width:70px;text-align:center;flex-shrink:0;font-variant-numeric:tabular-nums;}
+.scorer-photo{width:104px;height:104px;border-radius:50%;overflow:hidden;background:var(--mid-grey);flex-shrink:0;position:relative;}
+.scorer-photo img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.scorer-flag{position:absolute;right:-2px;bottom:-2px;width:42px;height:42px;border-radius:50%;overflow:hidden;background:var(--charcoal);border:3px solid var(--white);}
+.scorer--lead .scorer-flag{border-color:var(--brand-yellow);}
+.scorer-flag img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.scorer-id{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px;}
+.scorer-name{font-size:38px;font-weight:800;letter-spacing:1px;color:var(--off-black);text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.scorer-team{font-size:24px;font-weight:700;letter-spacing:0.5px;color:var(--dark-grey);text-transform:uppercase;white-space:nowrap;}
+.scorer--lead .scorer-team{color:var(--off-black);}
+.scorer-stat{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;}
+.scorer-goals{display:flex;align-items:baseline;gap:12px;}
+.scorer-goals .num{font-size:64px;font-weight:800;line-height:1;color:var(--off-black);font-variant-numeric:tabular-nums;}
+.scorer-goals .lbl{font-size:24px;font-weight:800;letter-spacing:1px;color:var(--off-black);text-transform:uppercase;}
+.scorer-assists{font-size:22px;font-weight:700;letter-spacing:0.5px;color:var(--dark-grey);text-transform:uppercase;white-space:nowrap;}
+.scorer--lead .scorer-assists{color:var(--off-black);}
+.scorers-empty{color:var(--mid-grey);font-size:28px;font-weight:800;text-transform:uppercase;letter-spacing:1px;text-align:center;padding:80px 0;}
+</style>
+</head><body>
+<div class="screen">
+  <div class="header-block">
+    <div class="top-row">
+      <div class="page-title">Top<br>Scorers</div>
+      <div class="badge" id="updatedBadge">Just updated</div>
+    </div>
+    <div class="header-sub">
+      <div class="div-thick"></div>
+      <div class="meta-row">Golden Boot</div>
+      <div class="div-thick"></div>
+    </div>
+  </div>
+
+  <div class="scorers" id="scorers"></div>
+</div>
+<script src="js/flag-global.js"></script>
+<script src="js/topscorers.js" defer></script>
+</body></html>

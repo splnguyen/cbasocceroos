@@ -39,27 +39,23 @@
 
 > **Australia's team ID is NOT 26** — that's Argentina. Look up the correct AUS ID via `/teams?league=1&season=2026` filtered by `code === 'AUS'` if the codebase still has the old value.
 
-## Group stage round mapping
+## Group stage round mapping — ⚠️ the round is the MATCHDAY, not the group
 
-api-football returns rounds as `"Group Stage - N"` where N is `1..12`. The proxy translates these to letters:
+For a **fixture**, api-football's `league.round` is `"Group Stage - N"` where **N is the matchday (1–3), NOT the group letter**. Mapping N→letter (e.g. `2`→`B`) is WRONG — it shows a matchday-2 Group E game as "Group B". (This was a real bug in the live screen's `metaGroup`, fixed 2026-06-21.)
 
-```
-1→A   2→B   3→C   4→D   5→E   6→F
-7→G   8→H   9→I   10→J  11→K  12→L
-```
+There is **no group letter on the fixture object**. Resolve the real group from `/standings`, where each team row carries `group: "Group A".."Group L"` — look it up by team id:
 
 ```js
-const GROUP_LETTER = {
-  '1':'A','2':'B','3':'C','4':'D','5':'E','6':'F',
-  '7':'G','8':'H','9':'I','10':'J','11':'K','12':'L'
-};
-const groupNum = leagueRound.match(/Group Stage - (\d+)/)?.[1];
-const metaGroup = groupNum
-  ? `Group ${GROUP_LETTER[groupNum] ?? groupNum}`
-  : leagueRound || f.league?.name || '–';
+// lib/match-service.js — groupFromStandings(standingsJson, homeId, awayId)
+const groups = standingsJson?.response?.[0]?.league?.standings ?? [];
+const arr = groups.find((g) => g.some((t) => t.team?.id === homeId || t.team?.id === awayId));
+const m = String(arr?.[0]?.group || '').match(/Group\s+([A-L])/i);
+return m ? `Group ${m[1].toUpperCase()}` : null;
 ```
 
-Knockout rounds (`Round of 32`, `Round of 16`, `Quarter-finals`, `Semi-finals`, `Final`) pass through unchanged.
+Where the group can't be resolved, emit a neutral `"Group Stage"` / `null` — never a guessed letter. Applied in `fetchMatch` (metaGroup), `fetchUpcoming` + `fetchUpcomingList` (fixture `group`). Knockout rounds (`Round of 32`, `Round of 16`, `Quarter-finals`, `Semi-finals`, `Final`) have no group and pass through as the round name.
+
+(The `GROUP_LETTER` number→letter table IS valid for the **standings** service, where api can return the group as `"Group Stage - N"` and there N really is the group index — see `lib/standings-service.js`.)
 
 ## Demo mode
 
