@@ -186,6 +186,9 @@ html, body {
   </div>
 </div>
 
+<!-- teamCode()/FLAG_MAP — used by the concurrent-pair matcher below to identify
+     live fixtures by FIFA team code (no side effects on load). -->
+<script src="js/flag-global.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════
 //  SCREEN REGISTRY
@@ -557,27 +560,67 @@ function showGoalOverlay(scorerText) {
 //                screen, with primary/secondary chosen for THIS office
 // ═══════════════════════════════════════════════════════════════
 
-// When two matches are live the pair screen shows one primary + one
-// secondary. /api/live returns fixtures already sorted (Australia first,
-// then earliest kickoff, then id), so fixtures[0] is the natural Office-1
-// primary and fixtures[1] the secondary; Office 2 swaps them. To pin a
-// specific match as Office-1 primary for a known simultaneous pairing, add
-// an entry keyed by the sorted "<idA>-<idB>" → the fixtureId to lead with.
-const PRIMARY_OVERRIDES = {
-  // '1234567-1234568': 1234568,
-};
+// When two matches are live the pair screen shows one primary (top/large) +
+// one secondary (bottom). /api/live returns fixtures already sorted (Australia
+// first, then earliest kickoff, then id), so fixtures[0] is the natural Office-1
+// primary and fixtures[1] the secondary; Office 2 swaps them.
 
-function liveSignature(fixtures) {
-  return fixtures.map(f => f.fixtureId).sort((a, b) => a - b).join('-');
+// Concurrent group-stage pairings for 25–28 June 2026. On these days each
+// group's two final-round matches kick off together; when both are live the
+// carousel shows the Match Live — Pair screen with MATCH_A (listed first) as the
+// Office-1 primary and MATCH_B (listed second) in the secondary slot. Office 2
+// flips them so the two displays cover both matches. Matches are identified by
+// FIFA team code from the live feed — no hard-coded fixture IDs (the codes come
+// from teamCode()/FLAG_MAP in js/flag-global.js).
+const CONCURRENT_PAIRS = [
+  // Thu 25 Jun
+  [['SUI','CAN'], ['BIH','QAT']],
+  [['MAR','HAI'], ['SCO','BRA']],   // list said "MAR vs URU" — corrected: Morocco play Haiti
+  [['CZE','MEX'], ['KOR','RSA']],
+  // Fri 26 Jun
+  [['ECU','GER'], ['CUW','CIV']],
+  [['NED','TUN'], ['JPN','SWE']],
+  [['AUS','PAR'], ['TUR','USA']],
+  // Sat 27 Jun
+  [['NOR','FRA'], ['SEN','IRQ']],
+  [['URU','ESP'], ['KSA','CPV']],
+  [['NZL','BEL'], ['EGY','IRN']],
+  // Sun 28 Jun
+  [['PAN','ENG'], ['CRO','GHA']],
+  [['POR','COL'], ['COD','UZB']],
+  [['JOR','ARG'], ['ALG','AUT']],
+];
+
+// True if a live fixture is the match between this exact (unordered) team pair.
+function fixtureIsMatch(f, codes) {
+  const h = teamCode(f.home?.name), a = teamCode(f.away?.name);
+  return (h === codes[0] && a === codes[1]) || (h === codes[1] && a === codes[0]);
+}
+
+// Find a defined pairing where BOTH matches are live, returning the listed-first
+// match as matchA. Iterates live fixtures in priority order (Australia first), so
+// if more than one group is live at once the office leads with the AUS pair.
+function findConcurrentPair(fixtures) {
+  for (const f of fixtures) {
+    for (const [a, b] of CONCURRENT_PAIRS) {
+      const isA = fixtureIsMatch(f, a), isB = fixtureIsMatch(f, b);
+      if (!isA && !isB) continue;
+      const mate = fixtures.find(x => x !== f && fixtureIsMatch(x, isA ? b : a));
+      if (mate) return { matchA: isA ? f : mate, matchB: isA ? mate : f };
+    }
+  }
+  return null;
 }
 
 function pickPair(fixtures) {
-  let [primary, secondary] = fixtures;
-  const override = PRIMARY_OVERRIDES[liveSignature(fixtures)];
-  if (override != null) {
-    const wanted = fixtures.find(f => f.fixtureId === override);
-    const other  = fixtures.find(f => f.fixtureId !== override);
-    if (wanted && other) { primary = wanted; secondary = other; }
+  let primary, secondary;
+  const pair = findConcurrentPair(fixtures);
+  if (pair) {
+    primary = pair.matchA;     // listed-first match leads on Office 1
+    secondary = pair.matchB;
+  } else {
+    // No defined pairing live → fall back to /api/live order (Australia first).
+    [primary, secondary] = fixtures;
   }
   // Office 2 mirrors Office 1 so the two displays cover both matches.
   if (OFFICE === 2) [primary, secondary] = [secondary, primary];

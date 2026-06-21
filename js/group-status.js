@@ -88,7 +88,7 @@
           <span class="gs-reg">${team.w}</span>
           <span class="gs-reg">${team.d}</span>
           <span class="gs-reg">${team.l}</span>
-          <span class="gs-reg">${gdLabel(team.gd)}</span>
+          <span class="gs-reg gs-gd">${gdLabel(team.gd)}</span>
           <span class="gs-pts">${team.pts}</span>
         </div>
       </div>`;
@@ -101,7 +101,7 @@
         <div class="gtitle">Group ${letter}</div>
         <div class="gdivider"></div>
         <div class="gcols">
-          <span>MP</span><span>W</span><span>D</span><span>L</span><span>GD</span><span>PTS</span>
+          <span>MP</span><span>W</span><span>D</span><span>L</span><span class="gs-gd">GD</span><span>PTS</span>
         </div>
         <div class="grows">${rows}</div>
       </div>`;
@@ -137,7 +137,7 @@
         <div class="gtitle">Group ${letter}</div>
         <div class="gdivider"></div>
         <div class="gcols">
-          <span>MP</span><span>W</span><span>D</span><span>L</span><span>GD</span><span>PTS</span>
+          <span>MP</span><span>W</span><span>D</span><span>L</span><span class="gs-gd">GD</span><span>PTS</span>
         </div>
         <div class="grows">${rows}</div>
       </div>`;

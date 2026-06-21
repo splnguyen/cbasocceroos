@@ -1,7 +1,7 @@
 /**
  * Latest Matches (group-stage results summary).
  *
- *   GET /api/upcoming-list?count=20[&demo=1]   → filter to FT matches
+ *   GET /api/upcoming-list?count=20&status=finished[&demo=1]  → recent FT matches
  *   GET /api/standings                          → render 2 group cards below
  *
  * Picks the 2 most recent FT fixtures for the top section. Below shows 2
@@ -22,9 +22,12 @@
   function applyPayload(payload, badgeText = 'Just updated') {
     const recentJson = payload.recent || {};
     const standingsJson = payload.standings || {};
-    const finished = (recentJson.matches || []).filter((m) => m.isFinished).slice(-2).reverse();
+    // Server returns finished matches newest-first; take the 2 most recent.
+    const finished = (recentJson.matches || []).filter((m) => m.isFinished).slice(0, 2);
     renderResults(finished);
-    renderStandings(standingsJson.groups || []);
+    // Group cards mirror the two results: most-recent match's group on the left,
+    // next most-recent on the right.
+    renderStandings(standingsJson.groups || [], finished);
     $('updatedBadge').textContent = badgeText;
     hasData = true;
   }
@@ -54,7 +57,9 @@
     $('updatedBadge').textContent = 'Updating…';
     try {
       const [recentRes, standingsRes] = await Promise.all([
-        fetch(`/api/upcoming-list?count=20${isDemo ? '&demo=1' : ''}`, { cache: 'no-store' }),
+        // status=finished → most-recent FINISHED matches (newest first). The plain
+        // ?next= default returns upcoming-only, which filtered to nothing live.
+        fetch(`/api/upcoming-list?count=20&status=finished${isDemo ? '&demo=1' : ''}`, { cache: 'no-store' }),
         fetch(`/api/standings${isDemo ? '?demo=1' : ''}`, { cache: 'no-store' }),
       ]);
       const recentJson = await recentRes.json();
@@ -123,6 +128,15 @@
     root.querySelectorAll('.result-flag img').forEach((img) => setFlag(img, img.alt, null));
   }
 
+  // Goal difference with explicit sign (FIFA convention: +5, 0, −3). U+2212 minus
+  // to match the design font, same as the group-status screens.
+  function gdLabel(gd) {
+    const n = Number(gd) || 0;
+    if (n > 0) return `+${n}`;
+    if (n < 0) return `−${Math.abs(n)}`;
+    return '0';
+  }
+
   function rowHtml(t) {
     return `
       <div class="grow grow--${t.status}">
@@ -135,6 +149,7 @@
           <span class="gs-reg">${t.w}</span>
           <span class="gs-reg">${t.d}</span>
           <span class="gs-reg">${t.l}</span>
+          <span class="gs-reg gs-gd">${gdLabel(t.gd)}</span>
           <span class="gs-pts">${t.pts}</span>
         </div>
       </div>`;
@@ -144,23 +159,34 @@
     const sorted = [...group.teams].sort((a, b) => {
       const s = STATUS_RANK[a.status] - STATUS_RANK[b.status];
       if (s !== 0) return s;
-      return b.pts - a.pts;
+      if (b.pts !== a.pts) return b.pts - a.pts;
+      if (b.gd  !== a.gd ) return b.gd  - a.gd;
+      return b.gf - a.gf;
     });
     return `
       <div class="gcard">
         <div class="gtitle">GROUP ${group.letter}</div>
         <div class="gdivider"></div>
         <div class="gcols">
-          <span>MP</span><span>W</span><span>D</span><span>L</span><span>PTS</span>
+          <span>MP</span><span>W</span><span>D</span><span>L</span><span class="gs-gd">GD</span><span>PTS</span>
         </div>
         <div class="grows">${sorted.map(rowHtml).join('')}</div>
       </div>`;
   }
 
-  function renderStandings(groups) {
+  function renderStandings(groups, matches = []) {
     const root = $('standings-pair');
-    // Show first 2 groups by default.
-    const pair = groups.slice(0, 2);
+    const byLetter = new Map(groups.map((g) => [g.letter, g]));
+    // Pick the groups of the displayed matches in order (recent → left). m.group
+    // is "GROUP E"; dedupe so two matches in one group don't show it twice.
+    const letters = [];
+    for (const m of matches) {
+      const L = (m.group || '').replace(/^GROUP\s+/i, '').trim();
+      if (L && byLetter.has(L) && !letters.includes(L)) letters.push(L);
+    }
+    let pair = letters.map((L) => byLetter.get(L));
+    // Fallback (e.g. knockout matches carry no group letter): first 2 groups.
+    if (!pair.length) pair = groups.slice(0, 2);
     root.innerHTML = pair.map(groupCardHtml).join('');
     root.querySelectorAll('.grow-flag img').forEach((img) => setFlag(img, img.alt, null));
   }

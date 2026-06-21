@@ -100,6 +100,9 @@ html,body{
 .grow-stats span{font-size:24px;width:40px;text-align:center;letter-spacing:0.48px;}
 .gs-reg{font-weight:400;}     /* MP/W/D/L — Regular */
 .gs-pts{font-weight:800;}     /* PTS — ExtraBold */
+/* GD column right-aligned so the digits stack and +/−/0 share a column edge,
+   with a gap before PTS so the two columns aren't squashed together. */
+.gcols .gs-gd,.grow-stats .gs-gd{text-align:right;margin-right:18px;}
 
 /* Demo-mode placeholder cards (page 2, slots I–L in 2022 demo) */
 .gcard--placeholder{justify-content:flex-start;}

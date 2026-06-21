@@ -73,7 +73,11 @@ html,body{
   font-size:18px;font-weight:800;letter-spacing:0.9px;color:var(--white);
   text-transform:uppercase;width:37px;text-align:center;
 }
-.gcols span + span{margin-left:14px;}
+.gcols span + span{margin-left:10px;}
+/* GD column right-aligned so the digits stack and +/−/0 share a column edge,
+   with extra gap before PTS so the two columns aren't squashed together
+   (8px on top of the 10px inter-column margin → ~18px, matching group tables). */
+.gcols .gs-gd,.grow-stats .gs-gd{text-align:right;margin-right:8px;}
 .grows{display:flex;flex-direction:column;gap:12px;width:100%;}
 .grow{
   height:70px;border-radius:10px;padding:0 10px;
@@ -87,8 +91,9 @@ html,body{
 .grow-flag img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
 .grow-code{font-size:24px;font-weight:800;letter-spacing:2.64px;text-transform:uppercase;}
 .grow-stats{display:flex;justify-content:flex-end;}
-.grow-stats span{font-size:24px;font-weight:800;width:37px;text-align:center;letter-spacing:1.2px;}
-.grow-stats span + span{margin-left:14px;}
+.grow-stats span{font-size:24px;font-weight:400;width:37px;text-align:center;letter-spacing:1.2px;}
+.grow-stats .gs-pts{font-weight:800;} /* PTS is the only bold stat — MP/W/D/L/GD stay regular */
+.grow-stats span + span{margin-left:10px;}
 </style>
 </head><body>
 <div class="screen">
