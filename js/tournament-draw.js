@@ -8,9 +8,24 @@
  *   R32 (bot)  ←  R16 (bot)  ←  QF (bot)  ←  SF2
  *
  * Modes
- *   default (live) — pre-tournament, every slot is TBC.
+ *   default (live) — R32 slots populate from /api/standings as each group
+ *                    finalises (see "Live R32 population" below). R16 onward
+ *                    stay TBC until those fixtures are actually played.
  *   ?demo=1        — 2022 WC actual bracket (R16 onward; 2022 had no R32 so
  *                    the R32 strips stay TBC).
+ *
+ * Live R32 population
+ *   api-football has NOT scheduled any knockout fixtures yet (verified: only
+ *   "Group Stage - 1/2/3" exist), so there are no R32 fixtures to read. Instead
+ *   we project the FIFA-published R32 bracket template (R32_TEMPLATE below)
+ *   onto the live group tables: every R32 slot is a group WINNER (1X) or
+ *   RUNNER-UP (2X) — except the best-third slots, which stay TBC because FIFA's
+ *   third-place assignment isn't fixed until all 12 groups finish. A 1X/2X slot
+ *   is filled ONLY once that group has played all 3 matchdays: until a group is
+ *   complete the 1st/2nd order can still swap on the final day, and 1st vs 2nd
+ *   land in DIFFERENT bracket positions, so filling early could misplace a team.
+ *   (Once api-football publishes real R32 fixtures they'd be the better source —
+ *   they carry the third-place teams and results too — but they don't exist yet.)
  *
  * Winner/loser styling per Figma annotation:
  *   - winner side: white flag + white/yellow code
@@ -19,6 +34,8 @@
 
 (function () {
   const isDemo = new URLSearchParams(location.search).get('demo') === '1';
+  const POLL_MS = 5 * 60 * 1000;
+  const CACHE_KEY = 'cba:tournament-draw:v1';
 
   // ── 2022 WC bracket data ─────────────────────────────────────────────────
   // winner: 'home' | 'away' | null (TBC).  PEN/AET decided handled by the
@@ -55,13 +72,83 @@
     r32_bot: blanks(8),
   };
 
-  const LIVE_TBC = {
-    r32_top: blanks(8),  r16_top: blanks(4),  qf_top:  blanks(2),  sf_top: { ...BLANK },
-    final:   { ...BLANK },
-    sf_bot:  { ...BLANK },  qf_bot:  blanks(2),  r16_bot: blanks(4),  r32_bot: blanks(8),
-  };
+  // All-TBC bracket — the initial live paint (and the shape R16+ keep for live).
+  function blankBracket() {
+    return {
+      r32_top: blanks(8), r16_top: blanks(4), qf_top: blanks(2), sf_top: { ...BLANK },
+      final:   { ...BLANK },
+      sf_bot:  { ...BLANK }, qf_bot: blanks(2), r16_bot: blanks(4), r32_bot: blanks(8),
+    };
+  }
 
-  const data = isDemo ? DEMO_2022 : LIVE_TBC;
+  // ── WC2026 R32 bracket template ───────────────────────────────────────────
+  // Verified (HIGH confidence) against Wikipedia's knockout-stage wikitext, the
+  // FIFA match-centre slugs embedded there, and Sky Sports — all in agreement.
+  // Each match has two slots: W('X') = winner of group X, R('X') = runner-up of
+  // group X, T3 = a best-third-placed team (TBC until FIFA's table resolves).
+  // `feeds` = the R16 match (89–96) the winner advances to; it fixes the bracket
+  // ordering (R16 89 is fed by M74+M77, which are out of numeric order, etc.).
+  const W = (g) => ({ slot: 'W', group: g });
+  const R = (g) => ({ slot: 'R', group: g });
+  const T3 = { slot: '3' };
+  const R32_TEMPLATE = [
+    { m: 73, home: R('A'), away: R('B'), feeds: 90 },
+    { m: 74, home: W('E'), away: T3,     feeds: 89 },
+    { m: 75, home: W('F'), away: R('C'), feeds: 90 },
+    { m: 76, home: W('C'), away: R('F'), feeds: 91 },
+    { m: 77, home: W('I'), away: T3,     feeds: 89 },
+    { m: 78, home: R('E'), away: R('I'), feeds: 91 },
+    { m: 79, home: W('A'), away: T3,     feeds: 92 },
+    { m: 80, home: W('L'), away: T3,     feeds: 92 },
+    { m: 81, home: W('D'), away: T3,     feeds: 94 },
+    { m: 82, home: W('G'), away: T3,     feeds: 94 },
+    { m: 83, home: R('K'), away: R('L'), feeds: 93 },
+    { m: 84, home: W('H'), away: R('J'), feeds: 93 },
+    { m: 85, home: W('B'), away: T3,     feeds: 96 },
+    { m: 86, home: W('J'), away: R('H'), feeds: 95 },
+    { m: 87, home: W('K'), away: T3,     feeds: 96 },
+    { m: 88, home: R('D'), away: R('G'), feeds: 95 },
+  ];
+  // Visual placement: each R32 row renders as adjacent pairs that sit above one
+  // R16 cell, so the two matches feeding the same R16 must be neighbours. Top
+  // half feeds R16 89/90/93/94 (→ SF1); bottom half feeds 91/92/95/96 (→ SF2).
+  // NOTE: only the R32 slots + their R16 feed are verified; the QF/SF topology
+  // used for the top/bottom split is the standard bracket and isn't load-bearing
+  // here (R16+ render as TBC), but it keeps the layout ready for a later wire-up.
+  const R32_TOP_ORDER = [74, 77, 73, 75, 83, 84, 81, 82];
+  const R32_BOT_ORDER = [76, 78, 79, 80, 86, 88, 85, 87];
+
+  // ── Resolve template slots against live group tables ───────────────────────
+  function resolveSlot(slot, groups) {
+    if (slot.slot === '3') return null;                 // best-third → TBC for now
+    const g = groups[slot.group];
+    if (!g || !g.complete) return null;                 // group not finalised → TBC
+    return g.byRank[slot.slot === 'W' ? 1 : 2] || null; // 1st / 2nd of the group
+  }
+
+  function buildLiveBracket(groups) {
+    const data = blankBracket();
+    const byMatch = {};
+    for (const tpl of R32_TEMPLATE) {
+      byMatch[tpl.m] = { home: resolveSlot(tpl.home, groups), away: resolveSlot(tpl.away, groups), winner: null };
+    }
+    data.r32_top = R32_TOP_ORDER.map((m) => byMatch[m]);
+    data.r32_bot = R32_BOT_ORDER.map((m) => byMatch[m]);
+    return data;
+  }
+
+  // Reduce /api/standings to { LETTER: { complete, byRank:{1:name,2:name} } }.
+  function groupsFromStandings(json) {
+    const map = {};
+    for (const g of json.groups || []) {
+      const teams = g.teams || [];
+      const complete = teams.length === 4 && teams.every((t) => (t.mp ?? 0) >= 3);
+      const byRank = {};
+      for (const t of teams) if (t.rank) byRank[t.rank] = t.name;
+      map[g.letter] = { complete, byRank };
+    }
+    return map;
+  }
 
   // ── Cell renderers ───────────────────────────────────────────────────────
   function cellSmall(match) {
@@ -184,7 +271,7 @@
     return cells.join('');
   }
 
-  function render() {
+  function render(data, badgeText) {
     const root = document.getElementById('bracket');
     root.innerHTML = `
       <section class="bround">
@@ -234,8 +321,53 @@
 
     // Paint flags (3-tier fallback handled by flag-global.js)
     root.querySelectorAll('.bflag img').forEach((img) => setFlag(img, img.alt, null));
-    document.getElementById('updatedBadge').textContent = isDemo ? 'Demo · 2022' : 'Just updated';
+    document.getElementById('updatedBadge').textContent = badgeText;
   }
 
-  render();
+  // ── Live cache (localStorage; instant paint on carousel revisits) ──────────
+  function readCache() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+      return parsed && parsed.groups && parsed.ts ? parsed : null;
+    } catch (e) { return null; }
+  }
+  function writeCache(groups) {
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify({ groups, ts: Date.now() })); }
+    catch (e) { /* best-effort */ }
+  }
+  function cacheBadge(ts) {
+    const mins = Math.floor((Date.now() - ts) / 60000);
+    if (mins <= 0) return 'Just updated';
+    if (mins === 1) return 'Updated 1 min ago';
+    return `Updated ${mins} mins ago`;
+  }
+
+  async function refresh() {
+    document.getElementById('updatedBadge').textContent = 'Updating…';
+    try {
+      const res = await fetch('/api/standings', { cache: 'no-store' });
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.error || `HTTP ${res.status}`);
+      const groups = groupsFromStandings(json);
+      writeCache(groups);
+      render(buildLiveBracket(groups), 'Just updated');
+    } catch (err) {
+      console.error('[tournament-draw]', err);
+      // Keep whatever bracket is on screen; just flag the failure.
+      document.getElementById('updatedBadge').textContent = 'Update failed';
+    }
+  }
+
+  // ── Boot ───────────────────────────────────────────────────────────────────
+  if (isDemo) {
+    render(DEMO_2022, 'Demo · 2022');
+    return;
+  }
+  const cached = readCache();
+  // Paint immediately: cached groups if we have them, otherwise an all-TBC frame.
+  if (cached) render(buildLiveBracket(cached.groups), cacheBadge(cached.ts));
+  else render(blankBracket(), 'Updating…');
+  const isStale = !cached || (Date.now() - cached.ts) > POLL_MS;
+  if (isStale) refresh();
+  setInterval(refresh, POLL_MS);
 })();
