@@ -22,8 +22,25 @@
   function applyPayload(payload, badgeText = 'Just updated') {
     const recentJson = payload.recent || {};
     const standingsJson = payload.standings || {};
-    // Server returns finished matches newest-first; take the 2 most recent.
-    const finished = (recentJson.matches || []).filter((m) => m.isFinished).slice(0, 2);
+    // Server returns finished matches newest-first. Prefer showing the full
+    // concurrent pair: concurrent matches kick off at the same time, but the
+    // API returns them in fixture-ID order so a match from a different slot can
+    // slip in at position 2 and push a same-slot partner to position 3. Grab
+    // all matches within 15 min of the most recent kickoff first; fall back to
+    // simple top-2 only if the slot has just one match.
+    const allFinished = (recentJson.matches || []).filter((m) => m.isFinished);
+    let finished;
+    if (!allFinished.length) {
+      finished = [];
+    } else {
+      const t0 = allFinished[0].kickoffEpoch || +new Date(allFinished[0].kickoffISO);
+      const SLOT_MS = 15 * 60 * 1000;
+      const slot = allFinished.filter((m) => {
+        const t = m.kickoffEpoch || +new Date(m.kickoffISO);
+        return t0 - t <= SLOT_MS;
+      });
+      finished = slot.length >= 2 ? slot.slice(0, 2) : allFinished.slice(0, 2);
+    }
     renderResults(finished);
     // Group cards mirror the two results: most-recent match's group on the left,
     // next most-recent on the right.
