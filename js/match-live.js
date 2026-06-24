@@ -234,17 +234,12 @@
     const others = liveFeed.filter((it) => !it.goal).slice(0, 16);
     const candidates = [...goals, ...others].sort((a, b) => liveFeed.indexOf(a) - liveFeed.indexOf(b)); // newest-first
 
-    // Pair screen keeps a fixed small count (tight vertical budget alongside the
-    // second match), goals still protected.
-    if (isPair) {
-      const g = goals.slice(0, 3);
-      const o = others.slice(0, Math.max(0, 3 - g.length));
-      const recent = [...g, ...o].sort((a, b) => liveFeed.indexOf(a) - liveFeed.indexOf(b));
-      feed.innerHTML = recent.map((it, i) => feedRowHtml(it, i === recent.length - 1, !renderedFeedIds.has(it.id))).join('');
-      applyFeedFlags(feed, recent);
-      renderedFeedIds = new Set(recent.map((it) => it.id));
-      return;
-    }
+    // Both single AND pair screens pack by MEASURED height (below). The pair
+    // screen used to keep a fixed 3 rows, but a "real" event renders a TWO-line
+    // row (title + description + flag) that's taller than the Figma 3-row budget
+    // assumed — so 3+ of them overflowed the fixed-height card and the bottom row
+    // was clipped mid-text. The packer keeps only rows that FULLY fit the card
+    // (308px on pair), so a row is never trimmed; goals are still protected.
 
     // Pass 1: render every candidate at full height (no `.last`) to measure.
     feed.innerHTML = candidates.map((it) => feedRowHtml(it, false)).join('');
