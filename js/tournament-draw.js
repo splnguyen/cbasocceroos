@@ -8,9 +8,9 @@
  *   R32 (bot)  ←  R16 (bot)  ←  QF (bot)  ←  SF2
  *
  * Modes
- *   default (live) — R32 slots populate from /api/standings as each group
- *                    finalises (see "Live R32 population" below). R16 onward
- *                    stay TBC until those fixtures are actually played.
+ *   default (live) — R32 slots project from /api/standings live (see "Live R32
+ *                    population" below). R16 onward stay TBC until those fixtures
+ *                    are actually played.
  *   ?demo=1        — 2022 WC actual bracket (R16 onward; 2022 had no R32 so
  *                    the R32 strips stay TBC).
  *
@@ -20,12 +20,13 @@
  *   we project the FIFA-published R32 bracket template (R32_TEMPLATE below)
  *   onto the live group tables: every R32 slot is a group WINNER (1X) or
  *   RUNNER-UP (2X) — except the best-third slots, which stay TBC because FIFA's
- *   third-place assignment isn't fixed until all 12 groups finish. A 1X/2X slot
- *   is filled ONLY once that group has played all 3 matchdays: until a group is
- *   complete the 1st/2nd order can still swap on the final day, and 1st vs 2nd
- *   land in DIFFERENT bracket positions, so filling early could misplace a team.
- *   (Once api-football publishes real R32 fixtures they'd be the better source —
- *   they carry the third-place teams and results too — but they don't exist yet.)
+ *   third-place assignment isn't fixed until all 12 groups finish. Each 1X/2X
+ *   slot shows the group's CURRENT 1st / 2nd (provisional) as soon as the group
+ *   has kicked off, and updates every poll. Until a group's final matchday the
+ *   1st/2nd order can still swap (and a current 2nd can drop out of the top two),
+ *   so a team may move slots or revert to TBC; the board firms up as groups
+ *   finish. (Once api-football publishes real R32 fixtures they'd be the better
+ *   source — third-place teams + results too — but they don't exist yet.)
  *
  * Winner/loser styling per Figma annotation:
  *   - winner side: white flag + white/yellow code
@@ -35,7 +36,7 @@
 (function () {
   const isDemo = new URLSearchParams(location.search).get('demo') === '1';
   const POLL_MS = 5 * 60 * 1000;
-  const CACHE_KEY = 'cba:tournament-draw:v1';
+  const CACHE_KEY = 'cba:tournament-draw:v2';
 
   // ── 2022 WC bracket data ─────────────────────────────────────────────────
   // winner: 'home' | 'away' | null (TBC).  PEN/AET decided handled by the
@@ -122,8 +123,8 @@
   function resolveSlot(slot, groups) {
     if (slot.slot === '3') return null;                 // best-third → TBC for now
     const g = groups[slot.group];
-    if (!g || !g.complete) return null;                 // group not finalised → TBC
-    return g.byRank[slot.slot === 'W' ? 1 : 2] || null; // 1st / 2nd of the group
+    if (!g || !g.started) return null;                  // group not kicked off → TBC
+    return g.byRank[slot.slot === 'W' ? 1 : 2] || null; // current 1st / 2nd (provisional)
   }
 
   function buildLiveBracket(groups) {
@@ -142,10 +143,10 @@
     const map = {};
     for (const g of json.groups || []) {
       const teams = g.teams || [];
-      const complete = teams.length === 4 && teams.every((t) => (t.mp ?? 0) >= 3);
+      const started = teams.some((t) => (t.mp ?? 0) > 0);  // group has played → ranks are meaningful
       const byRank = {};
       for (const t of teams) if (t.rank) byRank[t.rank] = t.name;
-      map[g.letter] = { complete, byRank };
+      map[g.letter] = { started, byRank };
     }
     return map;
   }
