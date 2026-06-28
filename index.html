@@ -264,7 +264,10 @@ const POSTKICKOFF_WINDOW_MS = 15 * 60 * 1000;
 // First WC 2026 match kicks off 5:00am AEST, 12 Jun 2026 (= 19:00 UTC, 11 Jun);
 // group stage wraps ~28 Jun. AEST is UTC+10 (no DST in June).
 const FIRST_MATCH_KICKOFF = Date.UTC(2026, 5, 11, 19, 0);
-const GROUP_STAGE_END     = Date.UTC(2026, 5, 28, 4, 0);
+// Group stage complete → knockout carousels take over from 5:00pm AEST 28 Jun
+// (= 07:00 UTC), ahead of the first Round of 32 match (5:00am AEST, 29 Jun) so
+// the bracket shows well before kickoff.
+const GROUP_STAGE_END     = Date.UTC(2026, 5, 28, 7, 0);
 
 // Latches true the first time we ever detect a live match, so we leave the
 // pre-tournament countdown phase exactly when the first match goes live
@@ -275,21 +278,14 @@ let firstMatchHasStarted = false;
 // 'match-live' / 'match-live-pair' are never in a playlist — the live state
 // machine shows them full-screen. 'goal-overlay' is postMessage-driven.
 //
-// pre-tournament and knockout are shared by both offices. The group-stage
-// carousel differs per office (see GROUP_STAGE_PLAYLISTS below).
+// pre-tournament is shared by both offices. The group-stage and knockout
+// carousels differ per office (see GROUP_STAGE_PLAYLISTS / KNOCKOUT_PLAYLISTS).
 const PHASE_PLAYLISTS = {
   // From now until the first match is live.
   'pre-tournament': [
     'tournament-countdown',
     'group-status-1',
     'group-status-2',
-  ],
-  // Group stage finished → knockout.
-  'knockout': [
-    'tournament-draw',
-    'top-scorers',
-    'comingup-two',     // Matches Coming Up
-    'matches-complete', // Latest Matches results
   ],
 };
 
@@ -300,6 +296,15 @@ const PHASE_PLAYLISTS = {
 const GROUP_STAGE_PLAYLISTS = {
   1: ['matches-complete', 'match-complete', 'comingup-two', 'top-scorers', 'top-keepers'],
   2: ['group-status-1', 'group-status-2', 'match-complete', 'comingup-two'],
+};
+
+// Office-specific knockout carousels (idle rotation when no match is live; both
+// offices flip to Match Live via the live state machine when a match is in-play).
+//   Office 1 → Upcoming (pair) → Round of 32
+//   Office 2 → Top Scorers → Top Keepers → Round of 32
+const KNOCKOUT_PLAYLISTS = {
+  1: ['comingup-two', 'round-of-32'],
+  2: ['top-scorers', 'top-keepers', 'round-of-32'],
 };
 
 function getPhase() {
@@ -315,6 +320,8 @@ function getActivePlaylist() {
   const phase = getPhase();
   const list  = phase === 'group-stage'
     ? (GROUP_STAGE_PLAYLISTS[OFFICE] ?? GROUP_STAGE_PLAYLISTS[1])
+    : phase === 'knockout'
+    ? (KNOCKOUT_PLAYLISTS[OFFICE] ?? KNOCKOUT_PLAYLISTS[1])
     : (PHASE_PLAYLISTS[phase] ?? PHASE_PLAYLISTS['pre-tournament']);
   const built = new Set(SCREENS.map(s => s.id));
   return list.filter(id => built.has(id));
@@ -786,8 +793,8 @@ function setDevBarHidden(hidden) {
 if (CONFIG.get('chrome') === '0') {
   setDevBarHidden(true);
 } else {
-  let hidden = false;
-  try { hidden = localStorage.getItem(DEVBAR_KEY) === '1'; } catch (_) {}
+  let hidden = true;
+  try { hidden = localStorage.getItem(DEVBAR_KEY) !== '0'; } catch (_) {}
   setDevBarHidden(hidden);
 }
 

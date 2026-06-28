@@ -22,24 +22,38 @@ html, body { width: 1080px; height: 1920px; overflow: hidden; background: #000; 
 <script src="js/daily-reload.js"></script>
 <script>
 // ── Foundry 3 carousel ────────────────────────────────────────────────────
-const playlist = [
+// Group stage: Group Status 2 → Top Keepers. Once all groups finish
+// (GROUP_STAGE_END, matching index.html) it switches to the knockout rotation:
+// Top Scorers → Top Keepers.
+const GROUP_STAGE_END = Date.UTC(2026, 5, 28, 7, 0); // 5:00pm AEST 28 Jun
+const GROUP_STAGE_PLAYLIST = [
   { src: 'screen-groupstatus-foundry-2.html', label: 'Group Stage Status 2' },
   { src: 'screen-topkeepers-foundry.html',    label: 'Top Keepers' },
 ];
+const KNOCKOUT_PLAYLIST = [
+  { src: 'screen-topscorers-foundry.html',    label: 'Top Scorers' },
+  { src: 'screen-topkeepers-foundry.html',    label: 'Top Keepers' },
+];
+function activePlaylist() {
+  return Date.now() > GROUP_STAGE_END ? KNOCKOUT_PLAYLIST : GROUP_STAGE_PLAYLIST;
+}
 
 const SLIDE_DURATION_MS = 45000;
-
-let index = 0;
 const frame = document.getElementById('screen-frame');
+let index = 0;
 
-function advance() {
-  index = (index + 1) % playlist.length;
-  frame.src = playlist[index].src;
+// Show playlist[i] for the current phase; dedup so an unchanged screen never reloads.
+function show(i) {
+  const pl = activePlaylist();
+  index = i % pl.length;
+  if (frame.src.indexOf(pl[index].src) === -1) frame.src = pl[index].src;
 }
+function advance() { show(index + 1); }
 
-if (playlist.length > 1) {
-  setInterval(advance, SLIDE_DURATION_MS);
-}
+show(0); // correct the hardcoded group-stage src immediately if already knockout
+// Re-evaluate every slide so the group-stage → knockout switch is picked up and the
+// playlist rotates.
+setInterval(advance, SLIDE_DURATION_MS);
 
 // Reload at ~4am AEST daily so deployed changes apply without a manual refresh.
 scheduleDailyReload();

@@ -88,17 +88,23 @@ const jitter = (ms) => Math.round(ms * (0.88 + Math.random() * 0.24));
 // First WC 2026 match: 5:00am AEST, 12 Jun 2026 (= 19:00 UTC, 11 Jun). Used only
 // as a fallback target for the pre-kickoff ramp if /api/upcoming is unreachable.
 const FIRST_MATCH_KICKOFF = Date.UTC(2026, 5, 11, 19, 0);
+// Knockout carousel takes over from 5:00pm AEST 28 Jun (= 07:00 UTC), matching
+// index.html's GROUP_STAGE_END so the foundry switches in step with the offices.
+const GROUP_STAGE_END = Date.UTC(2026, 5, 28, 7, 0);
 
 // ── Carousel playlists (foundry-branded screens) ──────────────────────────
 // Pre-tournament: just the countdown. Once the tournament is underway (first
 // match has gone live, or the clock has passed kickoff) the office switches to
-// the Recently Completed → Matches Coming Up rotation. Will expand once more
-// matches have been played.
+// the Recently Completed → Matches Coming Up rotation. Once all groups finish it
+// switches to the knockout rotation (Upcoming pair; Match Live overrides both).
 const PRE_TOURNAMENT_PLAYLIST = [
   { src: 'screen-tournament-countdown-foundry.html', label: 'Tournament Countdown' },
 ];
 const GROUP_STAGE_PLAYLIST = [
   { src: 'screen-matchescomplete-foundry.html', label: 'Recently Completed (Pair)' },
+  { src: 'screen-comingup-two-foundry.html',    label: 'Upcoming Matches (Pair)' },
+];
+const KNOCKOUT_PLAYLIST = [
   { src: 'screen-comingup-two-foundry.html',    label: 'Upcoming Matches (Pair)' },
 ];
 
@@ -120,8 +126,10 @@ const LIVE_GRACE_POLLS = 3;
 let liveGracePolls = 0;
 
 // The tournament is "underway" once the first match has gone live, or the clock
-// has passed the opener (fallback if we never catch a live poll).
+// has passed the opener (fallback if we never catch a live poll). Once all groups
+// finish (GROUP_STAGE_END) the knockout rotation takes over.
 function activePlaylist() {
+  if (Date.now() > GROUP_STAGE_END) return KNOCKOUT_PLAYLIST;
   const started = firstMatchHasStarted || Date.now() >= FIRST_MATCH_KICKOFF;
   return started ? GROUP_STAGE_PLAYLIST : PRE_TOURNAMENT_PLAYLIST;
 }

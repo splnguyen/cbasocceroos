@@ -42,55 +42,61 @@ html,body{
 }
 
 .r32-meta{color:var(--brand-yellow);}
-.grid{
-  display:grid;grid-template-columns:1fr 1fr;gap:14px;
-  flex:1;min-height:0;align-content:start;
+/* Bracket: LEFT column = all 16 Round-of-32 matches (32 teams) in 8 pairs;
+   RIGHT column = the 8 Round-of-16 matches each pair feeds into. Equal-width
+   columns; the R16 card sits centred against its feeding pair. (Figma 2162-5229) */
+.bracket{
+  display:flex;flex-direction:column;justify-content:space-between;
+  flex:1;min-height:0;
 }
-.h2h-card{
-  background:var(--charcoal);border-radius:10px;
-  padding:12px 14px;height:96px;
-  display:flex;align-items:center;justify-content:space-between;gap:8px;
+.brow{
+  display:grid;grid-template-columns:1fr 1fr;column-gap:40px;align-items:center;
 }
-.h2h-team{display:flex;align-items:center;gap:8px;flex:1;min-width:0;}
-.h2h-team.home{justify-content:flex-start;}
-.h2h-team.away{justify-content:flex-end;}
+.pair{display:flex;flex-direction:column;gap:14px;}
+/* Each match: [team tile] VS [team tile]. A tile is charcoal by default; the
+   winner flips to a white tile (dark code), the loser stays charcoal with a
+   desaturated flag + grey code. R16 tiles stay TBC until R32 winners populate. */
+.h2h-card{display:flex;align-items:center;gap:14px;}
+.h2h-tile{
+  flex:1;min-width:0;
+  background:var(--charcoal);border-radius:12px;
+  padding:9px 16px;
+  display:flex;align-items:center;justify-content:center;gap:16px;
+}
+.h2h-tile.winner{background:var(--white);}
 .h2h-flag{
-  width:62px;height:62px;border-radius:50%;overflow:hidden;
+  width:48px;height:48px;border-radius:50%;overflow:hidden;
   background:#444;flex-shrink:0;
 }
 .h2h-flag img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
 .h2h-code{
-  font-size:24px;font-weight:800;letter-spacing:1.2px;
-  color:var(--white);text-transform:uppercase;
+  font-size:26px;font-weight:800;letter-spacing:1.3px;
+  color:var(--white);text-transform:uppercase;white-space:nowrap;
 }
-.h2h-team.loser .h2h-code{color:var(--mid-grey);}
-.h2h-team.loser .h2h-flag img{filter:grayscale(1) opacity(0.55);}
+.h2h-tile.winner .h2h-code{color:var(--charcoal);}
+.h2h-tile.loser  .h2h-code{color:var(--mid-grey);}
+.h2h-tile.loser  .h2h-flag img{filter:grayscale(1) opacity(0.55);}
+.h2h-tile.tbc    .h2h-code{color:var(--mid-grey);}
 .h2h-vs{
-  font-size:22px;font-weight:800;letter-spacing:0.66px;
+  font-size:24px;font-weight:800;letter-spacing:0.72px;
   color:var(--white);text-transform:uppercase;
-  flex-shrink:0;width:42px;text-align:center;
+  flex-shrink:0;width:38px;text-align:center;
 }
-.h2h-tbd{
-  font-size:22px;font-weight:800;letter-spacing:1.1px;
-  color:var(--mid-grey);text-transform:uppercase;
-  flex:1;text-align:center;
-}
-.h2h-empty{justify-content:space-between;}
 </style>
 </head><body>
 <div class="screen">
   <div class="header-block">
     <div class="top-row">
-      <div class="page-title">State<br>Of Play</div>
+      <div class="page-title">State<br>of Play</div>
       <div class="badge" id="updatedBadge">Just updated</div>
     </div>
     <div class="header-sub">
       <div class="div-thick"></div>
-      <div class="meta-row r32-meta">Round of 32</div>
+      <div class="meta-row r32-meta">Knockout Stage</div>
       <div class="div-thick"></div>
     </div>
   </div>
-  <div class="grid" id="grid"></div>
+  <div class="bracket" id="grid"></div>
 </div>
 <script src="js/flag-global.js"></script>
 <script src="js/roundof32.js" defer></script>
