@@ -33,8 +33,11 @@ html,body{
 }
 .div-thick{width:100%;height:16px;background:var(--white);flex-shrink:0;}
 
-/* ── Match blocks (two completed matches, distributed over the page) ───────── */
-.blocks{display:flex;flex-direction:column;flex:1;min-height:0;justify-content:space-between;margin-top:36px;}
+/* ── Match blocks (two completed matches, centred over the page) ──────────── */
+/* The two blocks centre as a group; the middle divider's own margin sets the
+   space above/below it (was ~105px from space-between, now ~63px ≈ -40%). */
+.blocks{display:flex;flex-direction:column;flex:1;min-height:0;justify-content:center;margin-top:36px;}
+.blocks > .div-thick{margin:63px 0;}
 .match-block{display:flex;flex-direction:column;align-items:center;gap:44px;width:100%;}
 .results-empty{color:var(--mid-grey);font-size:32px;text-align:center;margin:auto;}
 
