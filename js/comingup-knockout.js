@@ -1,8 +1,9 @@
 /**
  * Match Coming Up — knockout variant.
  *
- * Renders one of two states depending on whether the sibling-bracket
- * opponent is known:
+ * Shows the NEXT scheduled tournament fixture (regardless of who's playing) via
+ * /api/upcoming (no team filter). Renders one of two states depending on whether
+ * the sibling-bracket opponent is known:
  *   • UNKNOWN — "WINNER PLAYS THE WINNER OF [A] vs [B]"
  *   • KNOWN   — "WINNER PLAYS [team]"
  *
@@ -249,10 +250,13 @@
   async function refresh() {
     updatedBadge.textContent = 'Updating…';
     try {
+      // Show the NEXT fixture overall (regardless of who's playing): /api/upcoming
+      // with no team resolves the next scheduled tournament fixture. Demo pins
+      // AUS's 2022 fixture — a finished season has no "next", so the offline
+      // preview needs a team to resolve a fixture to show.
       const qs = new URLSearchParams();
-      qs.set('team', AUS_TEAM_ID);
-      if (isDemo) qs.set('season', '2022');
-      const res = await fetch(`/api/upcoming?${qs.toString()}`, { cache: 'no-store' });
+      if (isDemo) { qs.set('season', '2022'); qs.set('team', AUS_TEAM_ID); }
+      const res = await fetch(`/api/upcoming${qs.toString() ? `?${qs}` : ''}`, { cache: 'no-store' });
       const json = await res.json();
       if (!res.ok || !json.ok) throw new Error(json.error || `HTTP ${res.status}`);
 
