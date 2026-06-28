@@ -83,6 +83,33 @@ html,body{
 .stat-vals .stat-h{text-align:left;}
 .stat-vals .stat-a{text-align:right;}
 .stat-sep{width:3px;height:34px;background:#d9d9d9;margin:0 8px;flex-shrink:0;}
+
+/* ── Single-match layout — used when only ONE match has been played in the last
+   24h. One block, scaled up and centred so it fills the page on its own. Only
+   the score / flags / spacing grow; the 4 stat cards + team names share the same
+   960px width as the dual layout, so they stay close to their dual sizes (names
+   may wrap to avoid clipping long countries). ─────────────────────────────── */
+.blocks.single .match-block{gap:76px;}
+.blocks.single .result-date{font-size:40px;}
+.blocks.single .result-row{gap:60px;}
+.blocks.single .result-team{width:300px;gap:44px;}
+.blocks.single .result-score{font-size:280px;}
+.blocks.single .result-avatar{gap:38px;}
+.blocks.single .result-flag{width:120px;height:120px;}
+.blocks.single .result-name{font-size:40px;white-space:normal;overflow-wrap:break-word;line-height:1.05;}
+.blocks.single .result-centre{width:240px;gap:34px;}
+.blocks.single .result-centre .vert-seg{width:20px;height:150px;}
+.blocks.single .result-ft{font-size:96px;}
+.blocks.single .poss-wrap{gap:24px;}
+.blocks.single .poss-label{font-size:32px;}
+.blocks.single .poss-pct{font-size:32px;width:130px;}
+.blocks.single .poss-flag{width:64px;height:64px;}
+.blocks.single .poss-bar{height:52px;}
+.blocks.single .stat-cards{gap:28px;}
+.blocks.single .stat-card{padding:40px 24px;gap:28px;}
+.blocks.single .stat-label{font-size:30px;}
+.blocks.single .stat-vals .stat-h,.blocks.single .stat-vals .stat-a{font-size:54px;}
+.blocks.single .stat-sep{width:4px;height:42px;}
 </style>
 </head><body>
 <div class="screen">

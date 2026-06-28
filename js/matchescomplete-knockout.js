@@ -99,6 +99,8 @@
 
   function render(matches, badgeText) {
     const root = $('match-blocks');
+    // One match → single (scaled-up) layout; two → dual layout.
+    root.classList.toggle('single', matches.length <= 1);
     if (!matches.length) {
       root.innerHTML = '<div class="results-empty">No recent results yet.</div>';
     } else {
@@ -126,15 +128,16 @@
     return `Updated ${mins} mins ago`;
   }
 
-  // Pick the 2 most recent — keep a concurrent pair together (R32 can run two at
-  // once; the API orders by fixture id so a same-slot partner can slip to #3).
-  function pickTwo(list) {
+  // Decide how many matches to show by a 24-hour window: 2+ played in the last
+  // 24h → the two most recent (dual layout); otherwise just the single most
+  // recent (single layout). `list` is newest-first.
+  function pickRecent(list) {
     if (!list.length) return [];
     const t = (m) => m.kickoffEpoch || +new Date(m.kickoffISO);
-    const t0 = t(list[0]);
-    const SLOT_MS = 15 * 60 * 1000;
-    const slot = list.filter((m) => t0 - t(m) <= SLOT_MS);
-    return slot.length >= 2 ? slot.slice(0, 2) : list.slice(0, 2);
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    const within24h = list.filter((m) => now - t(m) <= DAY_MS);
+    return within24h.length >= 2 ? within24h.slice(0, 2) : list.slice(0, 1);
   }
 
   // Fetch post-game stats for one match and merge them onto the list entry.
@@ -165,7 +168,7 @@
       // Prefer knockout results; fall back to the most recent finished so the
       // page is never blank (the "Latest Matches" title is phase-neutral).
       const knockout = allFinished.filter((m) => !/group/i.test(m.stage || m.leagueRound || ''));
-      const matches = await Promise.all(pickTwo(knockout.length ? knockout : allFinished).map(withStats));
+      const matches = await Promise.all(pickRecent(knockout.length ? knockout : allFinished).map(withStats));
 
       writeCache(matches);
       render(matches, 'Just updated');
