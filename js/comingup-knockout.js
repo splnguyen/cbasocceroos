@@ -170,9 +170,24 @@
     return g ? (g.byRank[slot.slot === 'W' ? 1 : 2] || null) : null;
   }
 
-  async function resolveR32Sibling(ausFix) {
-    if (ausFix.leagueRound !== 'Round of 32') return null;   // only R32 for now
-    const ausTeams = [ausFix.home.name, ausFix.away.name];
+  // Kickoff of the next-round (R16) match a known opponent has advanced to — used
+  // for "MATCH ON …" once the opponent is decided. api-football lists the advanced
+  // team in its R16 fixture, so we find it by name. Null until the R16 fixture
+  // exists (then it fills in automatically).
+  async function nextRoundDate(opponentName, nextRound) {
+    if (!opponentName || !nextRound) return null;
+    try {
+      const res = await fetch(`/api/upcoming-list?count=16&round=${encodeURIComponent(nextRound)}`, { cache: 'no-store' });
+      const json = await res.json();
+      if (!res.ok || !json.ok) return null;
+      const f = (json.matches || []).find((m) => m.home.name === opponentName || m.away.name === opponentName);
+      return f ? (f.kickoffEpoch || +new Date(f.kickoffISO)) : null;
+    } catch (e) { return null; }
+  }
+
+  async function resolveR32Sibling(fix) {
+    if (fix.leagueRound !== 'Round of 32') return null;      // only R32 for now
+    const fixTeams = [fix.home.name, fix.away.name];
     const [stRes, fxRes] = await Promise.all([
       fetch('/api/standings', { cache: 'no-store' }),
       fetch(`/api/upcoming-list?count=16&round=${encodeURIComponent('Round of 32')}`, { cache: 'no-store' }),
@@ -184,7 +199,8 @@
     const pool = (fxRes.ok && fx.ok ? fx.matches || [] : []).slice();
 
     // Each template match's teams: resolved W/R, overridden by the real fixture
-    // (matched by team membership — each team plays one R32 match).
+    // (matched by team membership — each team plays one R32 match). We also carry
+    // the result so a finished sibling resolves to a KNOWN opponent.
     const byNum = {};
     for (const m of Object.keys(R32_TEMPLATE)) {
       const tpl = R32_TEMPLATE[m];
@@ -198,21 +214,29 @@
       }
       if (idx >= 0) {
         const f = pool.splice(idx, 1)[0];
-        byNum[m] = { home: f.home.name, away: f.away.name, kickoff: f.kickoffEpoch || +new Date(f.kickoffISO) };
+        byNum[m] = { home: f.home.name, away: f.away.name, kickoff: f.kickoffEpoch || +new Date(f.kickoffISO), winner: f.winner, isFinished: f.isFinished };
       } else {
-        byNum[m] = { home, away, kickoff: null };
+        byNum[m] = { home, away, kickoff: null, winner: null, isFinished: false };
       }
     }
 
-    // Find AUS's match + its pair sibling.
-    const ausNum = Object.keys(byNum).map(Number)
-      .find((m) => [byNum[m].home, byNum[m].away].some((n) => n && ausTeams.includes(n)));
-    if (ausNum == null) return null;
-    const pair = R32_PAIRS.find((p) => p.includes(ausNum));
+    // Find the displayed fixture's match + its pair sibling.
+    const fixNum = Object.keys(byNum).map(Number)
+      .find((m) => [byNum[m].home, byNum[m].away].some((n) => n && fixTeams.includes(n)));
+    if (fixNum == null) return null;
+    const pair = R32_PAIRS.find((p) => p.includes(fixNum));
     if (!pair) return null;
-    const sib = byNum[pair[0] === ausNum ? pair[1] : pair[0]];
+    const sib = byNum[pair[0] === fixNum ? pair[1] : pair[0]];
     if (!sib || (!sib.home && !sib.away)) return null;
+
+    // Sibling decided → KNOWN opponent (its winner); otherwise UNKNOWN (winner of
+    // the two sibling teams, "match on" = when that sibling match is played).
+    if (sib.isFinished && (sib.winner === 'home' || sib.winner === 'away')) {
+      const opponent = sib.winner === 'home' ? sib.home : sib.away;
+      return { decided: true, opponent: opponent ? { name: opponent } : null, kickoff: await nextRoundDate(opponent, NEXT_ROUND[fix.leagueRound]) };
+    }
     return {
+      decided: false,
       team1: sib.home ? { name: sib.home } : null,
       team2: sib.away ? { name: sib.away } : null,
       kickoff: sib.kickoff,
@@ -269,15 +293,27 @@
 
       // Decide which "winner plays" variant to render.
       if (variantOverride === 'known') {
-        // Synthesise placeholder for preview only.
-        renderWinnerPlaysKnown({ name: 'TBD', logo: null }, fix.kickoffEpoch + 4 * 86400_000);
+        // Preview the "opponent known" state — pretend the sibling has been decided
+        // and show a resolved team (its winner, or one of the two sibling teams).
+        let team = { name: 'TBD', logo: null };
+        let when = fix.kickoffEpoch + 4 * 86400_000;
+        try {
+          const sib = await resolveR32Sibling(fix);
+          if (sib && sib.decided && sib.opponent) { team = sib.opponent; when = sib.kickoff || when; }
+          else if (sib && (sib.team1 || sib.team2)) { team = sib.team1 || sib.team2; when = sib.kickoff || when; }
+        } catch (e) { /* keep TBD */ }
+        renderWinnerPlaysKnown(team, when);
       } else if (variantOverride === 'unknown') {
         renderWinnerPlaysUnknown({ name: 'TBD' }, { name: 'TBD' }, fix.kickoffEpoch + 4 * 86400_000);
       } else {
-        // Round of 32: resolve the bracket sibling directly (the draw is known).
+        // Round of 32: resolve the bracket sibling. If that sibling match is
+        // finished → KNOWN opponent; otherwise → winner-of-A-vs-B. Auto-updates
+        // each poll as fixtures resolve.
         let r32sib = null;
         try { r32sib = await resolveR32Sibling(fix); } catch (e) { /* fall back below */ }
-        if (r32sib) {
+        if (r32sib && r32sib.decided && r32sib.opponent) {
+          renderWinnerPlaysKnown(r32sib.opponent, r32sib.kickoff);
+        } else if (r32sib && !r32sib.decided) {
           renderWinnerPlaysUnknown(r32sib.team1, r32sib.team2, r32sib.kickoff);
         } else {
           const sibling = await findSiblingBracket(fix);
