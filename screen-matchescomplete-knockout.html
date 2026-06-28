@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="typography.css">
 <link rel="stylesheet" href="fonts.css">
-<title>Latest Matches — Knockout</title>
+<title>Recently Completed — Knockout</title>
 <!--
   Recently Completed (Knockout) — Figma node 2221-7152. Office-1 knockout
   carousel. Same "Latest Matches" chrome + score line as the group-stage version
@@ -85,53 +85,70 @@ html,body{
 .stat-sep{width:3px;height:34px;background:#d9d9d9;margin:0 8px;flex-shrink:0;}
 
 /* ── Single-match layout — used when only ONE match has been played in the last
-   24h. Mirrors the group-stage single recap (screen-matchcomplete.html): score
-   line + result text + possession, then a bottom row with TOP PERFORMERS on the
-   left and the stat cards STACKED on the right. ───────────────────────────── */
-.blocks.single{justify-content:center;}
-.recap{display:flex;flex-direction:column;align-items:center;width:100%;gap:50px;}
-.recap .result-date{font-size:36px;}
-.recap .result-row{gap:50px;align-items:flex-start;}
-.recap .result-team{width:300px;gap:30px;}
-.recap .result-score{font-size:220px;}
-.recap .result-flag{width:120px;height:120px;}
-.recap .result-avatar{gap:30px;}
-.recap .result-name{font-size:40px;white-space:normal;overflow-wrap:break-word;line-height:1.05;}
-.recap .result-centre{width:240px;gap:24px;align-self:center;}
-.recap .result-centre .vert-seg{width:18px;height:130px;}
-.recap .result-block{display:flex;flex-direction:column;align-items:center;gap:14px;}
-.recap .result-ft{font-size:64px;}
+   24h. A faithful clone of the group-stage single recap (screen-matchcomplete.html):
+   score line + result text + possession, then a bottom row with the 8-stat grid
+   on the LEFT and TOP PERFORMERS on the RIGHT. All scoped under .recap so it never
+   clashes with the dual layout's styles. ──────────────────────────────────── */
+.blocks.single{justify-content:flex-start;}
+.recap{display:flex;flex-direction:column;width:100%;}
+/* score line — top/bottom margins balanced so it sits centred between the header
+   divider and the divider below it. */
+.recap .score-section{display:flex;align-items:stretch;justify-content:space-between;gap:20px;flex-shrink:0;height:480px;margin-top:34px;}
+.recap .team-col{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:30px;justify-content:space-between;}
+.recap .score-num{font-size:300px;font-weight:800;line-height:0.7;color:var(--white);text-align:center;}
+.recap .team-col.loser .score-num{color:var(--mid-grey);}
+.recap .team-col.loser .team-name{color:var(--mid-grey);}
+.recap .team-col.loser .flag-circle img{filter:grayscale(1) opacity(0.55);}
+.recap .team-avatar{display:flex;flex-direction:column;align-items:center;gap:30px;}
+.recap .flag-circle{width:150px;height:150px;border-radius:50%;overflow:hidden;background:#444;flex-shrink:0;}
+.recap .flag-circle img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.recap .team-name{--name-base:42px;font-size:var(--name-base);font-weight:800;color:var(--white);text-transform:uppercase;text-align:center;line-height:1.1;max-width:300px;overflow-wrap:break-word;word-break:break-word;}
+.recap .centre-col{width:260px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:space-between;}
+.recap .vert-seg{width:16px;height:170px;background:var(--dark-grey);flex-shrink:0;}
+.recap .result-block{display:flex;flex-direction:column;gap:16px;align-items:center;}
+.recap .result-ft{font-size:48px;font-weight:800;color:var(--white);}
 .recap .result-line{font-size:30px;font-weight:800;color:var(--white);text-align:center;white-space:nowrap;}
-.recap .div-thick{margin:0;}
-.recap .poss-wrap{gap:20px;}
-.recap .poss-label{font-size:28px;}
-.recap .poss-pct{font-size:28px;width:120px;}
-.recap .poss-flag{width:56px;height:56px;}
-.recap .poss-bar{height:48px;}
-/* Bottom row: performers (left) + stacked stat cards (right). */
-.bottom-grid{display:grid;grid-template-columns:1fr 380px;gap:24px;width:100%;height:540px;}
-.top-performers{background:var(--charcoal);border-radius:16px;padding:30px;display:flex;flex-direction:column;gap:24px;}
-.tp-title{font-size:28px;font-weight:800;letter-spacing:1px;color:var(--white);text-transform:uppercase;}
-.tp-list{display:flex;flex-direction:column;gap:18px;flex:1;}
-.tp-row{background:var(--white);border-radius:12px;padding:10px 24px;display:flex;align-items:center;gap:20px;flex:1;min-height:0;}
-.tp-row.loser{background:var(--dark-grey);}
-.tp-row.loser .tp-name,.tp-row.loser .tp-stats{color:var(--white);}
-.tp-flag{width:56px;height:56px;border-radius:50%;overflow:hidden;background:#444;flex-shrink:0;}
-.tp-flag img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
-.tp-name{font-size:26px;font-weight:800;color:var(--off-black);text-transform:uppercase;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.tp-stats{font-size:26px;font-weight:800;color:var(--off-black);white-space:nowrap;}
-.tp-empty{color:var(--mid-grey);font-size:24px;text-align:center;margin:auto;}
-.stat-stack{display:flex;flex-direction:column;gap:24px;min-width:0;}
-.stat-stack .stat-card{flex:1;padding:20px 28px;gap:14px;}
-.stat-stack .stat-label{font-size:28px;}
-.stat-stack .stat-vals .stat-h,.stat-stack .stat-vals .stat-a{font-size:56px;}
-.stat-stack .stat-sep{width:4px;height:44px;}
+/* Gap below the score line (balances the top margin so the score line is centred
+   between the two dividers; also keeps a wrapped 2-line name off the divider). */
+.recap .div-thick{margin-top:103px;}
+/* possession (home white fill on grey track, exactly like matchcomplete) */
+.recap .poss-wrap{display:flex;flex-direction:column;gap:20px;flex-shrink:0;margin-top:79px;}
+.recap .poss-label{font-size:24px;font-weight:800;letter-spacing:0.48px;color:var(--white);text-align:center;text-transform:uppercase;}
+.recap .poss-row{display:flex;align-items:center;gap:20px;}
+.recap .poss-pct{font-size:30px;font-weight:800;letter-spacing:2.4px;white-space:nowrap;}
+.recap .poss-pct.home{color:var(--white);}
+.recap .poss-pct.away{color:var(--mid-grey);}
+.recap .poss-flag{width:60px;height:60px;border-radius:50%;overflow:hidden;background:#444;flex-shrink:0;}
+.recap .poss-flag img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.recap .poss-bar{flex:1;display:flex;height:82px;border-radius:10px;overflow:hidden;background:var(--mid-grey);}
+.recap .poss-fill-home{height:100%;background:var(--white);}
+/* bottom: 8-stat grid (left) + TOP PERFORMERS (right) */
+.recap .bottom-grid{display:grid;grid-template-columns:485.5px 454.5px;gap:20px;height:540px;margin-top:60px;flex-shrink:0;}
+.recap .stats-grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(4,1fr);gap:20px;}
+.recap .stat-card{background:var(--charcoal);border-radius:10px;padding:18px;display:flex;flex-direction:column;justify-content:center;gap:21px;}
+.recap .stat-label{font-size:18px;font-weight:800;letter-spacing:0.9px;color:var(--white);text-align:center;text-transform:uppercase;}
+.recap .stat-vals{display:flex;align-items:center;justify-content:space-between;}
+.recap .stat-vals .stat-h,.recap .stat-vals .stat-a{font-size:30px;font-weight:800;line-height:1;flex:1;}
+.recap .stat-vals .stat-h{text-align:left;color:var(--white);}
+.recap .stat-vals .stat-a{text-align:right;color:var(--mid-grey);}
+.recap .stat-sep{width:3px;height:34px;background:var(--white);margin:0 8px;flex-shrink:0;}
+.recap .top-performers{background:var(--charcoal);border-radius:10px;padding:24px;display:flex;flex-direction:column;gap:30px;}
+.recap .tp-title{font-size:24px;font-weight:800;letter-spacing:0.48px;color:var(--white);text-transform:uppercase;}
+.recap .tp-list{display:flex;flex-direction:column;gap:20px;flex:1;}
+.recap .tp-row{background:var(--white);border-radius:10px;padding:8px 20px;display:flex;align-items:center;gap:20px;flex:1;min-height:0;}
+.recap .tp-row.loser{background:var(--dark-grey);}
+.recap .tp-row.loser .tp-name,.recap .tp-row.loser .tp-stats{color:var(--white);}
+.recap .tp-flag{width:50px;height:50px;border-radius:50%;overflow:hidden;background:#444;flex-shrink:0;}
+.recap .tp-flag img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.recap .tp-name{font-size:24px;font-weight:800;letter-spacing:0.48px;color:var(--off-black);text-transform:uppercase;flex:1;min-width:0;}
+.recap .tp-stats{font-size:24px;font-weight:800;letter-spacing:0.48px;color:var(--off-black);white-space:nowrap;}
+.recap .tp-empty{color:var(--mid-grey);font-size:24px;text-align:center;margin:auto;}
 </style>
 </head><body>
 <div class="screen">
   <div class="header-block">
     <div class="top-row">
-      <div class="page-title">Latest<br>Matches</div>
+      <div class="page-title">Recently<br>Completed</div>
       <div class="badge" id="updatedBadge">Just updated</div>
     </div>
     <div class="div-thick"></div>

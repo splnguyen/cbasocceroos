@@ -118,27 +118,29 @@
     return `<div class="top-performers"><div class="tp-title">TOP PERFORMERS</div><div class="tp-list">${rows}</div></div>`;
   }
 
-  // Single-match recap (matches the group-stage single design): score line +
-  // result text + possession, then TOP PERFORMERS (left) + stacked stat cards (right).
+  // Single-match recap — a clone of the group-stage single design
+  // (screen-matchcomplete.html): score line + result text + possession, then the
+  // 8-stat grid (left) + TOP PERFORMERS (right). Score keeps winner/loser colour;
+  // possession is home(white)/away(grey) like matchcomplete.
   function singleRecapHtml(m) {
-    const date = aestKickoffLine(m.kickoffEpoch || +new Date(m.kickoffISO));
     const homeLoser = m.winner === 'away';
     const awayLoser = m.winner === 'home';
     const possH = Number.isFinite(m.possH) ? m.possH : 50;
     const possA = Number.isFinite(m.possA) ? m.possA : 50;
     const resultLine = m.resultLine || (m.winner === 'draw' ? 'Draw' : '');
+    const teamCol = (side, name, score, loser) => `
+      <div class="team-col ${side} ${loser ? 'loser' : ''}">
+        <div class="score-num">${score ?? '–'}</div>
+        <div class="team-avatar">
+          <div class="flag-circle"><img alt="${name}"></div>
+          <div class="team-name">${(name || '').toUpperCase()}</div>
+        </div>
+      </div>`;
     return `
       <div class="recap">
-        <div class="result-date">${date}</div>
-        <div class="result-row">
-          <div class="result-team home ${homeLoser ? 'loser' : ''}">
-            <div class="result-score">${m.scoreH ?? '–'}</div>
-            <div class="result-avatar">
-              <div class="result-flag"><img alt="${m.home.name}"></div>
-              <div class="result-name">${(m.home.name || '').toUpperCase()}</div>
-            </div>
-          </div>
-          <div class="result-centre">
+        <div class="score-section">
+          ${teamCol('home', m.home.name, m.scoreH, homeLoser)}
+          <div class="centre-col">
             <div class="vert-seg"></div>
             <div class="result-block">
               <div class="result-ft">${resultTag(m)}</div>
@@ -146,35 +148,31 @@
             </div>
             <div class="vert-seg"></div>
           </div>
-          <div class="result-team away ${awayLoser ? 'loser' : ''}">
-            <div class="result-score">${m.scoreA ?? '–'}</div>
-            <div class="result-avatar">
-              <div class="result-flag"><img alt="${m.away.name}"></div>
-              <div class="result-name">${(m.away.name || '').toUpperCase()}</div>
-            </div>
-          </div>
+          ${teamCol('away', m.away.name, m.scoreA, awayLoser)}
         </div>
+        <div class="div-thick"></div>
         <div class="poss-wrap">
           <div class="poss-label">POSSESSION</div>
           <div class="poss-row">
-            <span class="poss-pct home ${homeLoser ? 'loser' : ''}">${possH}%</span>
+            <span class="poss-pct home">${possH}%</span>
             <div class="poss-flag"><img alt="${m.home.name}"></div>
-            <div class="poss-bar">
-              <div class="poss-seg ${homeLoser ? 'loser' : ''}" style="width:${possH}%"></div>
-              <div class="poss-seg ${awayLoser ? 'loser' : ''}" style="width:${possA}%"></div>
-            </div>
+            <div class="poss-bar"><div class="poss-fill-home" style="width:${possH}%"></div></div>
             <div class="poss-flag"><img alt="${m.away.name}"></div>
-            <span class="poss-pct away ${awayLoser ? 'loser' : ''}">${possA}%</span>
+            <span class="poss-pct away">${possA}%</span>
           </div>
         </div>
         <div class="bottom-grid">
-          ${topPerformersHtml(m)}
-          <div class="stat-stack">
+          <div class="stats-grid">
             ${statCard('SHOTS', m.shots)}
             ${statCard('ON TARGET', m.target)}
-            ${statCard('CORNERS', m.corners)}
             ${statCard('FOULS', m.fouls)}
+            ${statCard('CORNERS', m.corners)}
+            ${statCard('PASSES', m.passes)}
+            ${statCard('PASS ACCURACY', m.passAcc)}
+            ${statCard('SAVES', m.saves)}
+            ${statCard('OFFSIDES', m.offsides)}
           </div>
+          ${topPerformersHtml(m)}
         </div>
       </div>`;
   }
@@ -192,7 +190,7 @@
       root.innerHTML = matches.map(blockHtml).join('<div class="div-thick"></div>');
     }
     // Country flags resolve by name; player photos use their direct src in HTML.
-    root.querySelectorAll('.result-flag img, .poss-flag img').forEach((img) => setFlag(img, img.alt, null));
+    root.querySelectorAll('.result-flag img, .poss-flag img, .flag-circle img').forEach((img) => setFlag(img, img.alt, null));
     $('updatedBadge').textContent = badgeText;
   }
 
@@ -239,7 +237,10 @@
       const r = await fetch(`/api/match?${qs}`, { cache: 'no-store' });
       const j = await r.json();
       if (r.ok && j.ok) {
-        return { ...m, possH: j.possH, possA: j.possA, shots: j.shots, target: j.target, corners: j.corners, fouls: j.fouls, topPerformers: j.topPerformers };
+        return { ...m, possH: j.possH, possA: j.possA,
+          shots: j.shots, target: j.target, corners: j.corners, fouls: j.fouls,
+          passes: j.passes, passAcc: j.passAcc, saves: j.saves, offsides: j.offsides,
+          topPerformers: j.topPerformers };
       }
     } catch (e) { /* stats are optional — cards fall back to '–' */ }
     return m;
