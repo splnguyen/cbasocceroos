@@ -99,11 +99,14 @@ html,body{
   color:var(--white);text-align:center;text-transform:uppercase;
 }
 .winner-plays-row{
-  display:flex;align-items:center;justify-content:center;gap:24px;
+  display:flex;align-items:flex-start;justify-content:center;gap:24px;
   width:100%;
 }
 .winner-plays-row[hidden]{display:none;}
+/* Equal-width columns keep the VS centred and the flags symmetric even when one
+   name wraps; long names wrap WITHIN the column instead of widening it. */
 .mini-team{
+  flex:1;min-width:0;
   display:flex;flex-direction:column;align-items:center;gap:30px;
 }
 .mini-flag{
@@ -112,13 +115,17 @@ html,body{
 }
 .mini-flag img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
 .mini-name{
-  font-size:42px;font-weight:800;line-height:0.7;letter-spacing:0;
-  color:var(--white);text-transform:uppercase;text-align:center;white-space:nowrap;
+  font-size:42px;font-weight:800;line-height:1.05;letter-spacing:0;
+  color:var(--white);text-transform:uppercase;text-align:center;
+  max-width:100%;overflow-wrap:break-word;
 }
+/* VS box matches the flag height so it sits centred on the flags (the row is
+   top-aligned, so a wrapped name on one side never drags the VS down). */
 .mini-vs{
   font-size:48px;font-weight:400;letter-spacing:5.28px;
   color:var(--white);text-transform:uppercase;
-  flex-shrink:0;width:84.5px;text-align:center;align-self:center;
+  flex-shrink:0;width:84.5px;height:150px;
+  display:flex;align-items:center;justify-content:center;
 }
 .winner-plays-date{
   font-size:32px;font-weight:800;line-height:0.7;letter-spacing:3.2px;

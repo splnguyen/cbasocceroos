@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=1080">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="typography.css">
+<link rel="stylesheet" href="fonts.css">
+<title>Match Coming Up (Knockout) — Foundry</title>
+<!--
+  Foundry "Match Coming Up" (knockout single) — Figma node 2222-7525. Reuses
+  js/comingup-knockout.js UNCHANGED (same ids: updatedBadge / subhead / cd-clock /
+  cd-kickoff / flag-home|away / name-home|away / winner-plays-*). Same design as the
+  office screen-comingup-knockout.html, with foundry chrome (160px top pad) and
+  tighter section gaps so the big avatars + countdown + "winner plays" block fit.
+-->
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{
+  width:1080px;height:1920px;overflow:hidden;
+  background:var(--off-black);
+  font-family:'CBABeaconSans',sans-serif;
+  color:var(--white);
+}
+.screen{
+  /* Foundry top pad 160px (Figma pt ÷2) so titles line up across the carousel. */
+  width:1080px;height:1920px;padding:160px 60px 60px;
+  display:flex;flex-direction:column;align-items:center;overflow:hidden;
+}
+/* ── Header ── */
+.header-block{display:flex;flex-direction:column;gap:40px;flex-shrink:0;width:100%;}
+.top-row{display:flex;align-items:flex-start;justify-content:space-between;width:100%;}
+.page-title{font-size:64px;font-weight:800;line-height:68px;letter-spacing:3.2px;color:var(--brand-yellow);}
+.badge{
+  background:var(--black);color:var(--brand-yellow);
+  font-size:24px;font-weight:800;letter-spacing:1.2px;
+  padding:16px;border-radius:6px;white-space:nowrap;flex-shrink:0;
+}
+.header-sub{display:flex;flex-direction:column;gap:16px;width:100%;}
+.div-thick{width:100%;height:16px;background:var(--white);flex-shrink:0;}
+.meta-row{font-size:48px;font-weight:800;letter-spacing:2.4px;color:var(--brand-yellow);}
+/* ── Live-in countdown block ── */
+.cd-block{display:flex;flex-direction:column;gap:30px;align-items:center;flex-shrink:0;width:100%;margin-top:56px;}
+.cd-label{font-size:32px;font-weight:700;line-height:0.7;letter-spacing:3.2px;color:var(--brand-yellow);text-align:center;text-transform:uppercase;}
+.cd-clock{font-size:120px;font-weight:800;line-height:0.7;letter-spacing:6px;color:var(--brand-yellow);text-align:center;font-variant-numeric:tabular-nums;}
+.cd-kickoff{font-size:32px;font-weight:800;line-height:0.7;letter-spacing:3.2px;color:var(--brand-yellow);text-align:center;text-transform:uppercase;}
+/* ── Main match (big flags + VS) ── */
+.match-block{display:flex;align-items:flex-start;justify-content:center;gap:71px;flex-shrink:0;width:100%;margin-top:56px;}
+.team-col{width:367px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:30px;}
+.team-flag{width:367px;height:367px;border-radius:50%;overflow:hidden;background:#444;flex-shrink:0;}
+.team-flag img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.team-name{font-size:48px;font-weight:800;line-height:0.7;letter-spacing:2.4px;color:var(--white);text-transform:uppercase;text-align:center;white-space:nowrap;}
+.vs-big{font-size:48px;font-weight:400;letter-spacing:5.28px;color:var(--white);text-transform:uppercase;flex-shrink:0;width:84.5px;text-align:center;align-self:center;}
+/* ── Winner-plays block ── */
+.screen > .div-thick{margin-top:56px;}
+.div-thick + .winner-plays-block{margin-top:56px;}
+.winner-plays-block{display:flex;flex-direction:column;align-items:center;gap:56px;width:100%;flex-shrink:0;}
+.winner-plays-heading{font-size:32px;font-weight:800;line-height:0.7;letter-spacing:3.2px;color:var(--white);text-align:center;text-transform:uppercase;}
+/* Equal-width columns keep the VS centred + flags symmetric when a name wraps. */
+.winner-plays-row{display:flex;align-items:flex-start;justify-content:center;gap:24px;width:100%;}
+.winner-plays-row[hidden]{display:none;}
+.mini-team{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:30px;}
+.mini-flag{width:150px;height:150px;border-radius:50%;overflow:hidden;background:#444;flex-shrink:0;}
+.mini-flag img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.mini-name{font-size:42px;font-weight:800;line-height:1.05;letter-spacing:0;color:var(--white);text-transform:uppercase;text-align:center;max-width:100%;overflow-wrap:break-word;}
+.mini-vs{font-size:48px;font-weight:400;letter-spacing:5.28px;color:var(--white);text-transform:uppercase;flex-shrink:0;width:84.5px;height:150px;display:flex;align-items:center;justify-content:center;}
+.winner-plays-date{font-size:32px;font-weight:800;line-height:0.7;letter-spacing:3.2px;color:var(--white);text-align:center;text-transform:uppercase;width:100%;}
+</style>
+</head><body>
+<div class="screen">
+  <div class="header-block">
+    <div class="top-row">
+      <div class="page-title">Match<br>Coming Up</div>
+      <div class="badge" id="updatedBadge">Just updated</div>
+    </div>
+    <div class="header-sub">
+      <div class="div-thick"></div>
+      <div class="meta-row" id="subhead">Knockout Stage</div>
+      <div class="div-thick"></div>
+    </div>
+  </div>
+
+  <div class="cd-block">
+    <div class="cd-label">Live In</div>
+    <div class="cd-clock" id="cd-clock">–:–:–</div>
+    <div class="cd-kickoff" id="cd-kickoff">–</div>
+  </div>
+
+  <div class="match-block">
+    <div class="team-col">
+      <div class="team-flag"><img id="flag-home" alt=""></div>
+      <div class="team-name" id="name-home">–</div>
+    </div>
+    <div class="vs-big">VS</div>
+    <div class="team-col">
+      <div class="team-flag"><img id="flag-away" alt=""></div>
+      <div class="team-name" id="name-away">–</div>
+    </div>
+  </div>
+
+  <div class="div-thick"></div>
+
+  <div class="winner-plays-block">
+    <div class="winner-plays-heading" id="winner-plays-heading">WINNER PLAYS</div>
+    <div class="winner-plays-row" id="winner-plays-unknown" hidden></div>
+    <div class="winner-plays-row" id="winner-plays-known" hidden></div>
+    <div class="winner-plays-date" id="winner-plays-date">–</div>
+  </div>
+</div>
+<script src="js/flag-global.js"></script>
+<script src="js/comingup-knockout.js" defer></script>
+</body></html>

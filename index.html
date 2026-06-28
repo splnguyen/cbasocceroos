@@ -212,6 +212,7 @@ const SCREENS = [
   { id: 'comingup-single',     label: 'Coming Up — Single',        src: 'screen-comingup.html',           urlParam: null },
   { id: 'comingup-two',        label: 'Coming Up — Two Matches',   src: 'screen-comingup-two.html',       urlParam: null },
   // ── Upcoming — Knockout ───────────────────────────────────────
+  { id: 'comingup-ko',         label: 'Coming Up — Knockout',      src: 'screen-comingup-knockout.html',  urlParam: null },
   { id: 'comingup-ko-unknown', label: 'Coming Up — Opp. TBD',      src: 'screen-comingup-knockout.html',  urlParam: 'r32_unknown' },
   { id: 'comingup-ko-known',   label: 'Coming Up — Opp. Known',    src: 'screen-comingup-knockout.html',  urlParam: 'r32_known' },
   { id: 'comingup-sf',         label: 'Coming Up — Semi-final',    src: 'screen-comingup-knockout.html',  urlParam: 'sf_known' },
@@ -219,6 +220,7 @@ const SCREENS = [
   // ── Results ───────────────────────────────────────────────────
   { id: 'match-complete',      label: 'Match Complete',            src: 'screen-matchcomplete.html',      urlParam: null },
   { id: 'matches-complete',    label: 'Latest Matches',            src: 'screen-matchescomplete.html',    urlParam: null },
+  { id: 'matches-complete-ko', label: 'Latest Matches (Knockout)', src: 'screen-matchescomplete-knockout.html', urlParam: null },
   // ── Group Stage overview ──────────────────────────────────────
   { id: 'group-status-1',      label: 'Group Stage A–F',           src: 'screen-groupstatus-1.html',      urlParam: null },
   { id: 'group-status-2',      label: 'Group Stage G–L',           src: 'screen-groupstatus-2.html',      urlParam: null },
@@ -300,10 +302,10 @@ const GROUP_STAGE_PLAYLISTS = {
 
 // Office-specific knockout carousels (idle rotation when no match is live; both
 // offices flip to Match Live via the live state machine when a match is in-play).
-//   Office 1 → Upcoming (pair) → Round of 32
+//   Office 1 → Coming Up (Knockout single) → Round of 32 → Latest Matches (Knockout)
 //   Office 2 → Top Scorers → Top Keepers → Round of 32
 const KNOCKOUT_PLAYLISTS = {
-  1: ['comingup-two', 'round-of-32'],
+  1: ['comingup-ko', 'round-of-32', 'matches-complete-ko'],
   2: ['top-scorers', 'top-keepers', 'round-of-32'],
 };
 

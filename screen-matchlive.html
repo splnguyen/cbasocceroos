@@ -102,6 +102,17 @@ html,body{
   font-size:40px;font-weight:400;line-height:1.086;letter-spacing:2px;
   color:var(--white);text-align:center;white-space:nowrap;
 }
+/* Penalty kick-off (Figma 2112-4524): running shootout tally per team, flanking
+   the centre column. Hidden unless the match is in a live shootout
+   (.score-section.pens); absolutely positioned so the normal layout is unchanged. */
+.pen-num{
+  position:absolute;top:36px;
+  font-size:98px;font-weight:800;line-height:1;letter-spacing:0;
+  color:var(--white);white-space:nowrap;display:none;
+}
+.score-section.pens .pen-num{display:block;}
+.pen-home{right:calc(50% + 150px);}   /* just outside the 260px-wide centre column */
+.pen-away{left:calc(50% + 150px);}
 
 /* ── Rolling match feed wrapper (poss + stats + feed) ── */
 .rolling-feed{display:flex;flex-direction:column;gap:60px;flex-shrink:0;}
@@ -265,6 +276,8 @@ html,body{
   </div>
 
   <div class="score-section">
+    <div class="pen-num pen-home" id="pen-home"></div>
+    <div class="pen-num pen-away" id="pen-away"></div>
     <div class="team-col">
       <div class="score-num" id="score-home">–</div>
       <div class="team-avatar">

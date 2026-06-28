@@ -55,6 +55,7 @@ html,body{
 
 /* ── Score block (full size, matches single — Figma h-961 ÷2) ── */
 .score-section{
+  position:relative;                 /* anchor for the penalty tally numbers */
   display:flex;align-items:stretch;justify-content:space-between;
   gap:30px;flex-shrink:0;height:481px;margin-top:79px;
 }
@@ -98,6 +99,18 @@ html,body{
   font-size:40px;font-weight:400;line-height:1.086;letter-spacing:2px;
   color:var(--brand-yellow);text-align:center;white-space:nowrap;
 }
+/* Penalty kick-off (Figma 2112-4524): running shootout tally per team, flanking
+   the centre column on the primary match. Hidden unless live shootout (.pens). */
+.pen-num{
+  position:absolute;top:36px;
+  font-size:98px;font-weight:800;line-height:1;letter-spacing:0;
+  color:var(--white);white-space:nowrap;display:none;
+}
+.score-section.pens .pen-num{display:block;}
+.pen-home{right:calc(50% + 150px);}   /* just outside the 260px-wide centre column */
+.pen-away{left:calc(50% + 150px);}
+/* Secondary (also-live) card: compact shootout tally as a superscript on each score. */
+.also-pen{font-size:0.5em;font-weight:800;color:var(--brand-yellow);vertical-align:super;margin-left:6px;}
 
 /* ── Possession bar (large = single, small = pair) ── */
 .poss-wrap{display:flex;flex-direction:column;gap:16px;flex-shrink:0;}
@@ -257,6 +270,8 @@ html,body{
   </div>
 
   <div class="score-section">
+    <div class="pen-num pen-home" id="pen-home"></div>
+    <div class="pen-num pen-away" id="pen-away"></div>
     <div class="team-col">
       <div class="score-num" id="score-home">–</div>
       <div class="team-avatar">

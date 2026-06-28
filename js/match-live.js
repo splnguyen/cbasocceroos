@@ -272,7 +272,7 @@
   // Compact "MM+E'" form used by the small secondary (also-live) clock.
   function formatClock(state) {
     const tick = state.extra ? `${state.elapsed}+${state.extra}` : String(state.elapsed ?? '');
-    const suppress = state.isFinished || /Half Time|AET|Penalties/i.test(state.period || '');
+    const suppress = state.isFinished || /Half Time|AET|Penalt/i.test(state.period || '');
     return tick + (suppress ? '' : "'");
   }
 
@@ -341,6 +341,14 @@
     el.classList.add('bump');
   }
 
+  // Frozen clock shown during a penalty shootout — the shootout starts after the
+  // 120' of extra time, so it reads "120:00" (api-football reports elapsed in
+  // minutes; default to 120 if it isn't a sane in-shootout value).
+  function penClock(state) {
+    const m = Number.isFinite(state.elapsed) && state.elapsed >= 90 ? state.elapsed : 120;
+    return `${m}:00`;
+  }
+
   // ── Primary render ──────────────────────────────────────────────────────
   function renderPrimary(state) {
     homeId = state.home.id;
@@ -348,8 +356,25 @@
 
     setNum($('score-home'), state.scoreH);
     setNum($('score-away'), state.scoreA);
-    syncClock(state);
-    $('match-period').textContent = state.period ?? '–';
+
+    // Penalty kick-off: during a live shootout (status 'P' → isLive + penH/penA),
+    // show the running penalty-kick tally per team flanking the centre column,
+    // freeze the clock at the end of extra time, and label the centre "Penalty
+    // Kick-Off". Otherwise render the clock/period normally. (Figma 2112-4524.)
+    const penLive = !!state.isLive && state.penH != null && state.penA != null;
+    const section = $('score-home')?.closest('.score-section');
+    if (section) section.classList.toggle('pens', penLive);
+    setNum($('pen-home'), penLive ? state.penH : '');
+    setNum($('pen-away'), penLive ? state.penA : '');
+    if (penLive) {
+      clockRunning = false;                       // freeze: the 1s ticker skips it
+      const clk = $('match-clock');
+      if (clk) { clk.style.display = ''; clk.textContent = penClock(state); }
+      $('match-period').textContent = 'Penalty Kick-Off';
+    } else {
+      syncClock(state);
+      $('match-period').textContent = state.period ?? '–';
+    }
     $('meta-group').textContent = state.metaGroup ?? '–';
     $('meta-venue').textContent = state.metaVenue ?? '–';
     $('name-home').textContent = (state.home.name || '').toUpperCase();
@@ -425,18 +450,24 @@
     const homeCode = teamCode(state.home.name);
     const awayCode = teamCode(state.away.name);
 
+    // Live shootout: append the penalty-kick tally as a small superscript on each
+    // score (the centre already reads "Penalty Kick-Off" via state.period).
+    const penLive = !!state.isLive && state.penH != null && state.penA != null;
+    const penH = penLive ? `<sup class="also-pen">${state.penH}</sup>` : '';
+    const penA = penLive ? `<sup class="also-pen">${state.penA}</sup>` : '';
+
     card.innerHTML = `
       <div class="also-team home">
         <span class="also-team-code">${homeCode}</span>
         <div class="also-flag"><img id="also-flag-home" alt=""></div>
-        <span class="also-score">${state.scoreH ?? '–'}</span>
+        <span class="also-score">${state.scoreH ?? '–'}${penH}</span>
       </div>
       <div class="also-centre">
         <div class="also-clock">${formatClock(state)}</div>
         <div class="also-period">${state.period ?? '–'}</div>
       </div>
       <div class="also-team away">
-        <span class="also-score">${state.scoreA ?? '–'}</span>
+        <span class="also-score">${state.scoreA ?? '–'}${penA}</span>
         <div class="also-flag"><img id="also-flag-away" alt=""></div>
         <span class="also-team-code">${awayCode}</span>
       </div>`;
