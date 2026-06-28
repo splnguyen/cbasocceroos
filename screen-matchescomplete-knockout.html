@@ -85,31 +85,47 @@ html,body{
 .stat-sep{width:3px;height:34px;background:#d9d9d9;margin:0 8px;flex-shrink:0;}
 
 /* ── Single-match layout — used when only ONE match has been played in the last
-   24h. One block, scaled up and centred so it fills the page on its own. Only
-   the score / flags / spacing grow; the 4 stat cards + team names share the same
-   960px width as the dual layout, so they stay close to their dual sizes (names
-   may wrap to avoid clipping long countries). ─────────────────────────────── */
-.blocks.single .match-block{gap:76px;}
-.blocks.single .result-date{font-size:40px;}
-.blocks.single .result-row{gap:60px;}
-.blocks.single .result-team{width:300px;gap:44px;}
-.blocks.single .result-score{font-size:280px;}
-.blocks.single .result-avatar{gap:38px;}
-.blocks.single .result-flag{width:120px;height:120px;}
-.blocks.single .result-name{font-size:40px;white-space:normal;overflow-wrap:break-word;line-height:1.05;}
-.blocks.single .result-centre{width:240px;gap:34px;}
-.blocks.single .result-centre .vert-seg{width:20px;height:150px;}
-.blocks.single .result-ft{font-size:96px;}
-.blocks.single .poss-wrap{gap:24px;}
-.blocks.single .poss-label{font-size:32px;}
-.blocks.single .poss-pct{font-size:32px;width:130px;}
-.blocks.single .poss-flag{width:64px;height:64px;}
-.blocks.single .poss-bar{height:52px;}
-.blocks.single .stat-cards{gap:28px;}
-.blocks.single .stat-card{padding:40px 24px;gap:28px;}
-.blocks.single .stat-label{font-size:30px;}
-.blocks.single .stat-vals .stat-h,.blocks.single .stat-vals .stat-a{font-size:54px;}
-.blocks.single .stat-sep{width:4px;height:42px;}
+   24h. Mirrors the group-stage single recap (screen-matchcomplete.html): score
+   line + result text + possession, then a bottom row with TOP PERFORMERS on the
+   left and the stat cards STACKED on the right. ───────────────────────────── */
+.blocks.single{justify-content:center;}
+.recap{display:flex;flex-direction:column;align-items:center;width:100%;gap:50px;}
+.recap .result-date{font-size:36px;}
+.recap .result-row{gap:50px;align-items:flex-start;}
+.recap .result-team{width:300px;gap:30px;}
+.recap .result-score{font-size:220px;}
+.recap .result-flag{width:120px;height:120px;}
+.recap .result-avatar{gap:30px;}
+.recap .result-name{font-size:40px;white-space:normal;overflow-wrap:break-word;line-height:1.05;}
+.recap .result-centre{width:240px;gap:24px;align-self:center;}
+.recap .result-centre .vert-seg{width:18px;height:130px;}
+.recap .result-block{display:flex;flex-direction:column;align-items:center;gap:14px;}
+.recap .result-ft{font-size:64px;}
+.recap .result-line{font-size:30px;font-weight:800;color:var(--white);text-align:center;white-space:nowrap;}
+.recap .div-thick{margin:0;}
+.recap .poss-wrap{gap:20px;}
+.recap .poss-label{font-size:28px;}
+.recap .poss-pct{font-size:28px;width:120px;}
+.recap .poss-flag{width:56px;height:56px;}
+.recap .poss-bar{height:48px;}
+/* Bottom row: performers (left) + stacked stat cards (right). */
+.bottom-grid{display:grid;grid-template-columns:1fr 380px;gap:24px;width:100%;height:540px;}
+.top-performers{background:var(--charcoal);border-radius:16px;padding:30px;display:flex;flex-direction:column;gap:24px;}
+.tp-title{font-size:28px;font-weight:800;letter-spacing:1px;color:var(--white);text-transform:uppercase;}
+.tp-list{display:flex;flex-direction:column;gap:18px;flex:1;}
+.tp-row{background:var(--white);border-radius:12px;padding:10px 24px;display:flex;align-items:center;gap:20px;flex:1;min-height:0;}
+.tp-row.loser{background:var(--dark-grey);}
+.tp-row.loser .tp-name,.tp-row.loser .tp-stats{color:var(--white);}
+.tp-flag{width:56px;height:56px;border-radius:50%;overflow:hidden;background:#444;flex-shrink:0;}
+.tp-flag img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.tp-name{font-size:26px;font-weight:800;color:var(--off-black);text-transform:uppercase;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tp-stats{font-size:26px;font-weight:800;color:var(--off-black);white-space:nowrap;}
+.tp-empty{color:var(--mid-grey);font-size:24px;text-align:center;margin:auto;}
+.stat-stack{display:flex;flex-direction:column;gap:24px;min-width:0;}
+.stat-stack .stat-card{flex:1;padding:20px 28px;gap:14px;}
+.stat-stack .stat-label{font-size:28px;}
+.stat-stack .stat-vals .stat-h,.stat-stack .stat-vals .stat-a{font-size:56px;}
+.stat-stack .stat-sep{width:4px;height:44px;}
 </style>
 </head><body>
 <div class="screen">

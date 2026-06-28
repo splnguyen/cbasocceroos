@@ -97,16 +97,102 @@
       </div>`;
   }
 
+  // TOP PERFORMERS panel (single layout only) — losing team's players get the
+  // dark-grey row treatment, same as the group-stage recap (matchcomplete.js).
+  function topPerformersHtml(m) {
+    const performers = m.topPerformers || [];
+    if (!performers.length) {
+      return '<div class="top-performers"><div class="tp-title">TOP PERFORMERS</div><div class="tp-list"><div class="tp-empty">Player stats unavailable</div></div></div>';
+    }
+    const losingTeamId = m.winner === 'home' ? m.away.id : m.winner === 'away' ? m.home.id : null;
+    const rows = performers.map((p) => {
+      const isLoser = losingTeamId != null && p.teamId === losingTeamId;
+      const photo = p.photo ? `<img src="${p.photo}" alt="">` : '';
+      return `
+        <div class="tp-row ${isLoser ? 'loser' : ''}">
+          <div class="tp-flag">${photo}</div>
+          <span class="tp-name">${(p.name || '').toUpperCase()}</span>
+          <span class="tp-stats">${p.statLine || ''}</span>
+        </div>`;
+    }).join('');
+    return `<div class="top-performers"><div class="tp-title">TOP PERFORMERS</div><div class="tp-list">${rows}</div></div>`;
+  }
+
+  // Single-match recap (matches the group-stage single design): score line +
+  // result text + possession, then TOP PERFORMERS (left) + stacked stat cards (right).
+  function singleRecapHtml(m) {
+    const date = aestKickoffLine(m.kickoffEpoch || +new Date(m.kickoffISO));
+    const homeLoser = m.winner === 'away';
+    const awayLoser = m.winner === 'home';
+    const possH = Number.isFinite(m.possH) ? m.possH : 50;
+    const possA = Number.isFinite(m.possA) ? m.possA : 50;
+    const resultLine = m.resultLine || (m.winner === 'draw' ? 'Draw' : '');
+    return `
+      <div class="recap">
+        <div class="result-date">${date}</div>
+        <div class="result-row">
+          <div class="result-team home ${homeLoser ? 'loser' : ''}">
+            <div class="result-score">${m.scoreH ?? '–'}</div>
+            <div class="result-avatar">
+              <div class="result-flag"><img alt="${m.home.name}"></div>
+              <div class="result-name">${(m.home.name || '').toUpperCase()}</div>
+            </div>
+          </div>
+          <div class="result-centre">
+            <div class="vert-seg"></div>
+            <div class="result-block">
+              <div class="result-ft">${resultTag(m)}</div>
+              ${resultLine ? `<div class="result-line">${resultLine}</div>` : ''}
+            </div>
+            <div class="vert-seg"></div>
+          </div>
+          <div class="result-team away ${awayLoser ? 'loser' : ''}">
+            <div class="result-score">${m.scoreA ?? '–'}</div>
+            <div class="result-avatar">
+              <div class="result-flag"><img alt="${m.away.name}"></div>
+              <div class="result-name">${(m.away.name || '').toUpperCase()}</div>
+            </div>
+          </div>
+        </div>
+        <div class="poss-wrap">
+          <div class="poss-label">POSSESSION</div>
+          <div class="poss-row">
+            <span class="poss-pct home ${homeLoser ? 'loser' : ''}">${possH}%</span>
+            <div class="poss-flag"><img alt="${m.home.name}"></div>
+            <div class="poss-bar">
+              <div class="poss-seg ${homeLoser ? 'loser' : ''}" style="width:${possH}%"></div>
+              <div class="poss-seg ${awayLoser ? 'loser' : ''}" style="width:${possA}%"></div>
+            </div>
+            <div class="poss-flag"><img alt="${m.away.name}"></div>
+            <span class="poss-pct away ${awayLoser ? 'loser' : ''}">${possA}%</span>
+          </div>
+        </div>
+        <div class="bottom-grid">
+          ${topPerformersHtml(m)}
+          <div class="stat-stack">
+            ${statCard('SHOTS', m.shots)}
+            ${statCard('ON TARGET', m.target)}
+            ${statCard('CORNERS', m.corners)}
+            ${statCard('FOULS', m.fouls)}
+          </div>
+        </div>
+      </div>`;
+  }
+
   function render(matches, badgeText) {
     const root = $('match-blocks');
-    // One match → single (scaled-up) layout; two → dual layout.
-    root.classList.toggle('single', matches.length <= 1);
+    const single = matches.length <= 1;
+    // One match → single recap (top performers + stacked stats); two → dual.
+    root.classList.toggle('single', single);
     if (!matches.length) {
       root.innerHTML = '<div class="results-empty">No recent results yet.</div>';
+    } else if (single) {
+      root.innerHTML = singleRecapHtml(matches[0]);
     } else {
       root.innerHTML = matches.map(blockHtml).join('<div class="div-thick"></div>');
-      root.querySelectorAll('.result-flag img, .poss-flag img').forEach((img) => setFlag(img, img.alt, null));
     }
+    // Country flags resolve by name; player photos use their direct src in HTML.
+    root.querySelectorAll('.result-flag img, .poss-flag img').forEach((img) => setFlag(img, img.alt, null));
     $('updatedBadge').textContent = badgeText;
   }
 
@@ -141,17 +227,19 @@
   }
 
   // Fetch post-game stats for one match and merge them onto the list entry.
-  async function withStats(m) {
+  // `withPlayers` also pulls TOP PERFORMERS (single layout only).
+  async function withStats(m, withPlayers) {
     const qs = new URLSearchParams();
     // Demo /api/match ignores ?fixture (resolves by team's last 2022 match), so
     // request by the home team to get THIS match's stats; live uses the fixture id.
     if (isDemo) { qs.set('demo', '1'); qs.set('team', m.home.id); }
     else { qs.set('fixture', m.fixtureId); }
+    if (withPlayers) qs.set('players', '1');
     try {
       const r = await fetch(`/api/match?${qs}`, { cache: 'no-store' });
       const j = await r.json();
       if (r.ok && j.ok) {
-        return { ...m, possH: j.possH, possA: j.possA, shots: j.shots, target: j.target, corners: j.corners, fouls: j.fouls };
+        return { ...m, possH: j.possH, possA: j.possA, shots: j.shots, target: j.target, corners: j.corners, fouls: j.fouls, topPerformers: j.topPerformers };
       }
     } catch (e) { /* stats are optional — cards fall back to '–' */ }
     return m;
@@ -168,7 +256,9 @@
       // Prefer knockout results; fall back to the most recent finished so the
       // page is never blank (the "Latest Matches" title is phase-neutral).
       const knockout = allFinished.filter((m) => !/group/i.test(m.stage || m.leagueRound || ''));
-      const matches = await Promise.all(pickRecent(knockout.length ? knockout : allFinished).map(withStats));
+      const picked = pickRecent(knockout.length ? knockout : allFinished);
+      const single = picked.length <= 1;   // single layout pulls TOP PERFORMERS too
+      const matches = await Promise.all(picked.map((m) => withStats(m, single)));
 
       writeCache(matches);
       render(matches, 'Just updated');
