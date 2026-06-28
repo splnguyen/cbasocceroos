@@ -46,9 +46,14 @@ html, body { width: 1080px; height: 1920px; overflow: hidden; background: var(--
 </style>
 </head>
 <body>
-<iframe id="screen-frame" src="screen-tournament-countdown-foundry.html" title="Foundry 1 screen"></iframe>
-<!-- Transition cover (off-black) — masks the iframe reload between slides. -->
-<div id="transition-overlay"></div>
+<!-- Start blank, covered by the off-black overlay below: the controller's first
+     checkLive() decides what to show (live screen or the phase carousel) and
+     reveals it via goTo(). This avoids painting a hard-coded screen (e.g. the
+     pre-tournament countdown) for a frame before the real screen loads. -->
+<iframe id="screen-frame" src="about:blank" title="Foundry 1 screen"></iframe>
+<!-- Transition cover (off-black) — masks iframe reloads between slides, and
+     starts opaque (fade-in) so the boot screen is covered until the first paint. -->
+<div id="transition-overlay" class="fade-in"></div>
 <!-- Carousel slide-timer progress bar (yellow, bottom). -->
 <div id="progress-bar"></div>
 <!-- Goal overlay: hidden iframe shown on top of the live screen when a goal is
