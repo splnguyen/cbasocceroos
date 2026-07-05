@@ -52,35 +52,40 @@ html,body{
 .brow{
   display:grid;grid-template-columns:1fr 1fr;column-gap:40px;align-items:center;
 }
-.pair{display:flex;flex-direction:column;gap:14px;}
-/* Each match: [team tile] VS [team tile]. A tile is charcoal by default; the
-   winner flips to a white tile (dark code), the loser stays charcoal with a
-   desaturated flag + grey code. R16 tiles stay TBC until R32 winners populate. */
-.h2h-card{display:flex;align-items:center;gap:14px;}
+.pair{display:flex;flex-direction:column;gap:20px;}
+/* Each match: [team card] VS [team card]. Cards are the LARGE country tiles
+   (Figma card-country-h2h 2177-5722, all px ÷2): vertical — 70px circular flag
+   over the FULL country name — bigger than the R32 pill. Charcoal by default;
+   the winner flips to a white card (dark name), the loser keeps a desaturated
+   flag + grey name. QF tiles stay TBC until R16 winners populate. */
+.h2h-card{display:flex;align-items:center;gap:20px;}
 .h2h-tile{
-  flex:1;min-width:0;
-  background:var(--charcoal);border-radius:12px;
-  padding:9px 16px;
-  display:flex;align-items:center;justify-content:center;gap:16px;
+  flex:1;min-width:0;height:138px;
+  background:var(--charcoal);border-radius:10px;
+  padding:16px 15px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px;
 }
 .h2h-tile.winner{background:var(--white);}
 .h2h-flag{
-  width:48px;height:48px;border-radius:50%;overflow:hidden;
+  width:70px;height:70px;border-radius:50%;overflow:hidden;
   background:#444;flex-shrink:0;
 }
 .h2h-flag img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
-.h2h-code{
-  font-size:26px;font-weight:800;letter-spacing:1.3px;
+.h2h-name{
+  font-size:24px;font-weight:800;letter-spacing:0.48px;
   color:var(--white);text-transform:uppercase;white-space:nowrap;
+  max-width:100%;
 }
-.h2h-tile.winner .h2h-code{color:var(--charcoal);}
-.h2h-tile.loser  .h2h-code{color:var(--mid-grey);}
+/* Long names (≥11 chars, e.g. SWITZERLAND) step down so they stay on one line. */
+.h2h-name.long{font-size:19px;letter-spacing:0.38px;}
+.h2h-tile.winner .h2h-name{color:var(--charcoal);}
+.h2h-tile.loser  .h2h-name{color:var(--mid-grey);}
 .h2h-tile.loser  .h2h-flag img{filter:grayscale(1) opacity(0.55);}
-.h2h-tile.tbc    .h2h-code{color:var(--mid-grey);}
+.h2h-tile.tbc    .h2h-name{color:var(--mid-grey);}
 .h2h-vs{
   font-size:24px;font-weight:800;letter-spacing:0.72px;
   color:var(--white);text-transform:uppercase;
-  flex-shrink:0;width:38px;text-align:center;
+  flex-shrink:0;width:33px;text-align:center;
 }
 </style>
 </head><body>

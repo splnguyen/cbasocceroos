@@ -162,14 +162,23 @@
   }
 
   // ── Render ──────────────────────────────────────────────────────────────────
+  // R16 tiles are the LARGE card-country-h2h component (Figma 2177-5722): a
+  // vertical card — 70px circular flag over the FULL country name — bigger than
+  // the R32 pill (48px flag + 3-letter code). Names ≥11 chars get a smaller size
+  // so e.g. SWITZERLAND still fits on one line.
+  const NAME_REMAP = { 'Cape Verde Islands': 'Cabo Verde' };
+  const displayName = (name) => (NAME_REMAP[name] || name || '').toUpperCase();
+
   function tileHtml(name, state) {
     if (!name) {
-      return `<div class="h2h-tile tbc"><span class="h2h-flag"></span><span class="h2h-code">TBC</span></div>`;
+      return `<div class="h2h-tile tbc"><span class="h2h-flag"></span><span class="h2h-name">TBC</span></div>`;
     }
+    const label = displayName(name);
+    const long = label.length >= 11 ? ' long' : '';
     return `
       <div class="h2h-tile ${state}">
         <span class="h2h-flag"><img alt="${name}"></span>
-        <span class="h2h-code">${teamCode(name)}</span>
+        <span class="h2h-name${long}">${label}</span>
       </div>`;
   }
   function cardHtml(m) {
@@ -238,17 +247,19 @@
     }
   }
 
-  // ── Demo: static snapshot. First pair has results so the winner/loser tiles AND
-  //    the populated QF column are visible; the rest stay in-progress / TBC. ─────
+  // ── Demo: static snapshot mirroring the REAL 2026 R16 draw (verified against
+  //    /api/upcoming-list AND press coverage, 2026-07-05: FRA 1-0 PAR, MAR 3-0
+  //    CAN → QF1 France vs Morocco). First pair decided so winner/loser tiles
+  //    AND the populated QF column are visible; the rest stay TBC. ──────────────
   const DEMO_BYNUM = {
-    89: { home: 'Germany',      away: 'France',       winner: 'away' },  // FRA ↑
-    90: { home: 'Canada',       away: 'Netherlands',  winner: 'home' },  // CAN ↑
-    93: { home: 'Spain',        away: 'Portugal',     winner: null },
-    94: { home: 'Belgium',      away: 'Croatia',      winner: null },
+    89: { home: 'Paraguay',     away: 'France',       winner: 'away' },  // FRA ↑ 1-0
+    90: { home: 'Canada',       away: 'Morocco',      winner: 'away' },  // MAR ↑ 3-0
+    93: { home: 'Portugal',     away: 'Spain',        winner: null },
+    94: { home: 'USA',          away: 'Belgium',      winner: null },
     91: { home: 'Brazil',       away: 'Norway',       winner: null },
     92: { home: 'Mexico',       away: 'England',      winner: null },
-    95: { home: 'Argentina',    away: 'Japan',        winner: null },
-    96: { home: 'Australia',    away: 'Colombia',     winner: null },
+    95: { home: 'Argentina',    away: 'Egypt',        winner: null },
+    96: { home: 'Switzerland',  away: 'Colombia',     winner: null },
   };
 
   // ── Boot ────────────────────────────────────────────────────────────────────
