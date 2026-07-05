@@ -24,14 +24,14 @@ html, body { width: 1080px; height: 1920px; overflow: hidden; background: #000; 
 // ── Foundry 2 carousel ────────────────────────────────────────────────────
 // Group stage: Group Status 1 → Top Scorers. Once all groups finish
 // (GROUP_STAGE_END, matching index.html) it switches to a single static
-// knockout screen: the Round of 32 bracket.
+// knockout screen: the Round of 16 bracket.
 const GROUP_STAGE_END = Date.UTC(2026, 5, 28, 7, 0); // 5:00pm AEST 28 Jun
 const GROUP_STAGE_PLAYLIST = [
   { src: 'screen-groupstatus-foundry-1.html', label: 'Group Stage Status 1' },
   { src: 'screen-topscorers-foundry.html',    label: 'Top Scorers' },
 ];
 const KNOCKOUT_PLAYLIST = [
-  { src: 'screen-roundof32-foundry.html',     label: 'Round of 32' },
+  { src: 'screen-roundof16-foundry.html',     label: 'Round of 16' },
 ];
 function activePlaylist() {
   return Date.now() > GROUP_STAGE_END ? KNOCKOUT_PLAYLIST : GROUP_STAGE_PLAYLIST;
