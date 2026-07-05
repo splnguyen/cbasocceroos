@@ -4,14 +4,15 @@
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="typography.css">
 <link rel="stylesheet" href="fonts.css">
-<title>Knockout Stage — Foundry</title>
+<title>Round of 16 — Foundry</title>
 <!--
-  Foundry "Knockout Stage" (Round of 16 bracket) — office node 2177-5443.
+  Foundry "Round of 16" bracket — office node 2177-5443.
   Reuses js/roundof16.js UNCHANGED (same #grid / #updatedBadge ids and
   .bracket/.brow/.pair/.qf/.h2h-* markup as the office screen-roundof16.html).
   This file only supplies the foundry chrome + foundry-scaled bracket CSS:
-    - 160px top pad (Figma pt-320 ÷2) so titles line up across the foundry carousel
-    - header compressed to a single 64px "Knockout Stage" title + ONE divider
+    - 160px top pad + 140px bottom pad, matching the Top Scorers foundry margins
+      so screens line up across the foundry carousel
+    - header compressed to a single 64px "Round of 16" title + ONE divider
       (the office uses "State of Play" + a "Round of 16" meta between two bars)
   Cards are the SAME large card-country-h2h tiles as the office screen (Figma
   2177-5722 ÷2: 138px vertical card, 70px flag, full country name) — they fit
@@ -28,9 +29,9 @@ html,body{
   font-family:'CBABeaconSans',sans-serif;
   color:var(--white);
 }
-/* Top padding 160px matches the other foundry screens so titles line up across
-   the carousel (Figma pt-320 ÷2). */
-.screen{width:1080px;height:1920px;padding:160px 60px 60px;display:flex;flex-direction:column;overflow:hidden;}
+/* 160px top / 140px bottom padding matches the Top Scorers foundry screen so
+   titles + content bounds line up across the carousel (Figma pt-320 ÷2). */
+.screen{width:1080px;height:1920px;padding:160px 60px 140px;display:flex;flex-direction:column;overflow:hidden;}
 
 /* ── Header (compressed vs office: single title + one divider) ─────────────── */
 .header-block{display:flex;flex-direction:column;gap:30px;flex-shrink:0;}
@@ -90,7 +91,7 @@ html,body{
 <div class="screen">
   <div class="header-block">
     <div class="top-row">
-      <div class="page-title">Knockout<br>Stage</div>
+      <div class="page-title">Round<br>of 16</div>
       <div class="badge" id="updatedBadge">Just updated</div>
     </div>
     <div class="div-thick"></div>
