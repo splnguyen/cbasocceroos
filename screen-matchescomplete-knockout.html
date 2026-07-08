@@ -105,7 +105,8 @@ html,body{
 .recap .team-avatar{display:flex;flex-direction:column;align-items:center;gap:30px;}
 .recap .flag-circle{width:150px;height:150px;border-radius:50%;overflow:hidden;background:#444;flex-shrink:0;}
 .recap .flag-circle img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
-.recap .team-name{--name-base:42px;font-size:var(--name-base);font-weight:800;color:var(--white);text-transform:uppercase;text-align:center;line-height:1.1;max-width:300px;overflow-wrap:break-word;word-break:break-word;}
+.recap .team-name{font-size:42px;font-weight:800;color:var(--white);text-transform:uppercase;text-align:center;line-height:1.1;white-space:nowrap;}
+.recap .team-name.long{font-size:32px;}
 .recap .centre-col{width:260px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:space-between;}
 .recap .vert-seg{width:16px;height:170px;background:var(--dark-grey);flex-shrink:0;}
 .recap .result-block{display:flex;flex-direction:column;gap:16px;align-items:center;}

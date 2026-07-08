@@ -138,7 +138,7 @@
         <div class="score-num">${score ?? '–'}</div>
         <div class="team-avatar">
           <div class="flag-circle"><img alt="${name}"></div>
-          <div class="team-name">${(name || '').toUpperCase()}</div>
+          <div class="team-name${(name || '').length >= 8 ? ' long' : ''}">${(name || '').toUpperCase()}</div>
         </div>
       </div>`;
     return `
