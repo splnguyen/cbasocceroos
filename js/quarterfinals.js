@@ -68,6 +68,11 @@
   // posted QF fixtures — 97 FRA-MAR, 98 ESP-BEL, 99 NOR-ENG, 100 ARG-SUI).
   const QF_FEEDS = { 97: [89, 90], 98: [93, 94], 99: [91, 92], 100: [95, 96] };
   const SF_FEEDS = { 101: [97, 98], 102: [99, 100] };
+  // Confirmed SF kick-offs (AEST → UTC): SF1 15 Jul 5AM AEST, SF2 16 Jul 5AM AEST.
+  const KNOWN_SF_KICKOFFS = {
+    101: '2026-07-14T19:00:00+00:00',
+    102: '2026-07-15T19:00:00+00:00',
+  };
   // Render rows: [QF pair] → the SF it feeds.
   const ROWS = [
     { pair: [97, 98], sf: 101 },
@@ -152,6 +157,9 @@
     for (const num of Object.keys(SF_FEEDS)) {
       if (!sf[num].kickoffISO && leftovers.length) {
         sf[num].kickoffISO = leftovers.shift().kickoffISO;
+      }
+      if (!sf[num].kickoffISO && KNOWN_SF_KICKOFFS[num]) {
+        sf[num].kickoffISO = KNOWN_SF_KICKOFFS[num];
       }
     }
     return ROWS.map((r) => ({
@@ -273,14 +281,14 @@
         { home: 'France', away: 'Morocco', winner: 'home', kickoffISO: '2026-07-09T20:00:00+00:00' },
         { home: 'Spain', away: 'Belgium', winner: null, kickoffISO: '2026-07-10T19:00:00+00:00' },
       ],
-      sf: { home: 'France', away: null, winner: null, kickoffISO: null },
+      sf: { home: 'France', away: null, winner: null, kickoffISO: '2026-07-14T19:00:00+00:00' },
     },
     {
       qf: [
         { home: 'Norway', away: 'England', winner: null, kickoffISO: '2026-07-11T21:00:00+00:00' },
         { home: 'Argentina', away: 'Switzerland', winner: null, kickoffISO: '2026-07-12T01:00:00+00:00' },
       ],
-      sf: { home: null, away: null, winner: null, kickoffISO: null },
+      sf: { home: null, away: null, winner: null, kickoffISO: '2026-07-15T19:00:00+00:00' },
     },
   ];
 
