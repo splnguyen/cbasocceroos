@@ -29,9 +29,9 @@ html,body{
   font-family:'CBABeaconSans',sans-serif;
   color:var(--white);
 }
-/* Top padding 128px — the foundry-standard 160px (Top Scorers margin, Figma
-   pt-320 ÷2) reduced 20% so the bracket sits higher; 140px bottom kept. */
-.screen{width:1080px;height:1920px;padding:128px 60px 140px;display:flex;flex-direction:column;overflow:hidden;}
+/* 160px top / 140px bottom padding matches the Top Scorers foundry margins so
+   screens line up across the carousel (Figma pt-320 ÷2). */
+.screen{width:1080px;height:1920px;padding:160px 60px 140px;display:flex;flex-direction:column;overflow:hidden;}
 
 /* ── Header (compressed vs office: single title + one divider) ─────────────── */
 .header-block{display:flex;flex-direction:column;gap:30px;flex-shrink:0;}
@@ -48,9 +48,12 @@ html,body{
    LEFT column = all 4 Quarter-final matches in 2 pairs; RIGHT column = the 2
    Semi-finals each pair feeds, centred against the pair. Every match carries
    its AEST kick-off caption. */
+/* Pinned 110px below the header's divider (Figma 2233-6003: 220px at 2x from
+   the bar to the tile tops) — fixed height = the QF column, so the columns
+   stay centred against EACH OTHER but the cluster no longer floats. */
 .bracket{
   display:flex;gap:40px;align-items:center;
-  flex:1;min-height:0;margin-top:40px;
+  height:974px;flex-shrink:0;margin-top:110px;
 }
 /* Fixed-height column blocks, vertically centred in the bracket area (Figma
    h-1947 / h-1479 ÷2) — the cluster pulls to the middle rather than spreading

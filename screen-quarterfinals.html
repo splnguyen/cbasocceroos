@@ -18,8 +18,7 @@ html,body{
   color:var(--white);
 }
 .screen{
-  /* top padding 48px (was the uniform 60px; -20% so the bracket sits higher) */
-  width:1080px;height:1920px;padding:48px 60px 60px;
+  width:1080px;height:1920px;padding:60px;
   display:flex;flex-direction:column;gap:30px;
   overflow:hidden;
 }
@@ -49,9 +48,13 @@ html,body{
    R16 board: every match carries a brand-yellow kick-off caption (AEST) —
    Figma marks it --yellow-bright #ffd951, which this token sheet deliberately
    folds into --brand-yellow ("no yellow-bright"). */
+/* Pinned 110px below the header's bottom bar (Figma 2233-6003 measures 220px
+   at 2x from the bar to the tile tops) — fixed height = the QF column, so the
+   columns stay centred against EACH OTHER but the cluster no longer floats in
+   the leftover space. .screen's gap:30 + 80 margin = the 110px. */
 .bracket{
   display:flex;gap:40px;align-items:center;
-  flex:1;min-height:0;
+  height:974px;flex-shrink:0;margin-top:80px;
 }
 /* Fixed-height column blocks, vertically centred in the bracket area (Figma
    h-1947 / h-1479 ÷2) — the cluster pulls to the middle rather than spreading
