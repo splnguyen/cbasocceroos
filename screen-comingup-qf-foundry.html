@@ -16,10 +16,11 @@
     - 50px section rhythm (gap-100, office uses 79/gap-158)
     - "Quarter Finals" subhead in BRAND YELLOW (office: white)
     - countdown block gap 50 (office 40)
-  Bottom panel identical to office: "PAST 5 MATCHES | HEAD TO HEAD" + three
-  card-stat tiles (curated last-5 tallies), then the prototyped "WORLD CUP
-  2026" live form rows pinned to the bottom padding line. Middle divider
-  stays inside the screen padding to match the header bars (requested).
+  Bottom panel: "PAST 5 MATCHES | HEAD TO HEAD" + three card-stat tiles
+  (curated last-5 tallies). NO "WORLD CUP 2026" form section here — it's
+  office-only (removed from foundry 8 Jul on request); js/comingup-qf.js
+  detects the missing #wc-label/#wc-rows and skips those fetches. Middle
+  divider stays inside the screen padding to match the header bars.
 -->
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -63,15 +64,6 @@ html,body{
 /* ── Bottom panel — identical to office (see screen-comingup-qf.html) ── */
 .h2h-block{display:flex;flex-direction:column;width:100%;flex:1;min-height:0;}
 .h2h-title{font-size:32px;font-weight:800;line-height:1;letter-spacing:3.2px;color:var(--white);text-align:center;text-transform:uppercase;}
-.sec-label{
-  font-size:18px;font-weight:800;line-height:1;letter-spacing:1.8px;
-  color:var(--mid-grey);text-align:center;text-transform:uppercase;
-  /* fixed gap below the card-stat tiles (was margin-top:auto → pinned to the
-     bottom padding line; reduced ~30% on request, office matches) */
-  margin-top:80px;
-  margin-bottom:12px;
-}
-.sec-label.stale::after{content:' · STALE';color:var(--dark-grey);}
 .tally-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;flex-shrink:0;margin-top:50px;}
 .card-stat{
   background:var(--charcoal);border-radius:10px;padding:24px;
@@ -79,24 +71,6 @@ html,body{
 }
 .stat-label{font-size:24px;font-weight:800;line-height:1;letter-spacing:0.72px;color:var(--white);text-align:center;text-transform:uppercase;white-space:nowrap;}
 .stat-val{font-size:48px;font-weight:800;line-height:1;letter-spacing:2.4px;color:var(--white);text-align:center;font-variant-numeric:tabular-nums;}
-.wc-rows{display:flex;flex-direction:column;gap:10px;flex-shrink:0;}
-.wc-row{
-  background:var(--charcoal);border-radius:10px;padding:10px 24px;
-  display:flex;align-items:center;gap:24px;
-}
-.wc-team{width:220px;flex-shrink:0;font-size:22px;font-weight:800;line-height:1;letter-spacing:0.44px;color:var(--white);text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.wc-strip{flex:1;display:flex;gap:8px;justify-content:center;}
-.fbox{
-  width:32px;height:32px;border-radius:6px;flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;
-  font-size:17px;font-weight:800;
-}
-.fbox.w{background:var(--tile-qualified);color:var(--charcoal);}
-.fbox.d{background:var(--tile-contention);color:var(--off-black);}
-.fbox.l{background:var(--off-black);color:var(--mid-grey);}
-.fbox.empty{background:var(--off-black);opacity:0.45;}
-.wc-stat{flex-shrink:0;min-width:220px;font-size:20px;font-weight:800;line-height:1;letter-spacing:0.6px;color:var(--brand-yellow);text-transform:uppercase;text-align:right;white-space:nowrap;}
-.wc-unavailable{font-size:20px;font-weight:800;line-height:1;letter-spacing:1px;color:var(--mid-grey);text-align:center;text-transform:uppercase;padding:24px 0;}
 </style>
 </head><body>
 <div class="screen">
@@ -135,8 +109,6 @@ html,body{
   <div class="h2h-block">
     <div class="h2h-title" id="h2h-title">Past 5 Matches | Head to Head</div>
     <div class="tally-row" id="tally-row"></div>
-    <div class="sec-label" id="wc-label">World Cup 2026</div>
-    <div class="wc-rows" id="wc-rows"></div>
   </div>
 </div>
 <script src="js/flag-global.js"></script>

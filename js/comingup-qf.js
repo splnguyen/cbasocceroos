@@ -4,10 +4,10 @@
  * Foundry screen: Figma 2271-6838 ("match-comingup-qf-foundry").
  * Both reuse this script unchanged (same element ids).
  *
- * ROTATES through every not-yet-finished Quarter-final (20s per match):
- * countdown + avatars + the bottom panel all swap together. Panel data for
- * all fixtures is fetched once per 5-min poll; rotation renders from memory,
- * so the 20s cycle adds zero upstream API traffic.
+ * ROTATES through every not-yet-finished Quarter-final in kickoff order,
+ * 10s per match: countdown + avatars + the bottom panel swap together.
+ * Panel data for all fixtures is fetched once per 5-min poll; rotation
+ * renders from memory, so the 10s cycle adds zero upstream API traffic.
  *
  * Bottom panel (SPLIT PROVENANCE — same principle as the earlier build):
  *
@@ -22,8 +22,10 @@
  *      presented as the full record.
  *
  *   2. "WORLD CUP 2026" — LIVE per-team form strips + goal stats from
- *      /api/form + /api/topscorers. A failed poll degrades only this half
- *      (keeps last good data, or shows "LIVE DATA UNAVAILABLE").
+ *      /api/form + /api/topscorers. OFFICE ONLY — the foundry variant omits
+ *      the #wc-label/#wc-rows elements and this script skips the fetches.
+ *      No visible empty state: the whole section stays hidden until live
+ *      data is available (a failed poll keeps the last good data).
  *
  * ?demo=1 renders the REAL four-QF snapshot (fixtures, kickoffs, curated
  * tallies, and form strips baked from /api/form on 2026-07-08) offline.
@@ -33,7 +35,7 @@
   const params = new URLSearchParams(location.search);
   const isDemo = params.get('demo') === '1';
   const POLL_MS = 5 * 60 * 1000;
-  const ROTATE_MS = 20 * 1000;
+  const ROTATE_MS = 10 * 1000;
   const QF_ROUND = 'Quarter-finals';
 
   const updatedBadge = document.getElementById('updatedBadge');
@@ -46,8 +48,10 @@
   const nameAway   = document.getElementById('name-away');
   const h2hTitle   = document.getElementById('h2h-title');
   const tallyRow   = document.getElementById('tally-row');
+  // WC2026 section is office-only — the foundry markup omits these elements.
   const wcLabel    = document.getElementById('wc-label');
   const wcRows     = document.getElementById('wc-rows');
+  const hasWc      = Boolean(wcLabel && wcRows);
 
   let kickoffEpoch = null;
   const h2hValidated = new Set();  // one validation log per pairing per load
@@ -138,10 +142,12 @@
       </div>`;
   }
   function renderWc(fix, panel) {
-    if (!panel.formH || !panel.formA) {
-      wcRows.innerHTML = '<div class="wc-unavailable">LIVE DATA UNAVAILABLE</div>';
-      return;
-    }
+    if (!hasWc) return;
+    // No visible empty state — the whole section hides until data exists.
+    const show = Boolean(panel.formH && panel.formA);
+    wcLabel.style.display = show ? '' : 'none';
+    wcRows.style.display = show ? '' : 'none';
+    if (!show) return;
     wcRows.innerHTML =
       wcRow(fix.home.name, stripBoxes(panel.formH.form), panel.statH) +
       wcRow(fix.away.name, stripBoxes(panel.formA.form), panel.statA);
@@ -226,7 +232,9 @@
       console.error('[comingup-qf] tally', err);
       panel.tally = prev?.panel.tally || { curated: false, homeWins: '–', awayWins: '–', draws: '–' };
     }
-    // Live half — degrades alone, keeping the previous poll's data if any.
+    // Live half — office only; degrades alone, keeping the previous poll's
+    // data if any (renderWc hides the section while formH/formA are null).
+    if (!hasWc) return { fix, panel };
     try {
       const season = fix.leagueSeason || 2026;
       const [formH, formA] = await Promise.all([
@@ -264,9 +272,11 @@
         updatedBadge.textContent = 'No upcoming matches';
         return;
       }
-      // Scorer leaderboard once per poll (shared across all four stat lines).
-      const scorers = await fetch('/api/topscorers', { cache: 'no-store' })
-        .then((r) => r.json()).then((s) => (s.ok ? s.scorers : [])).catch(() => []);
+      // Scorer leaderboard for the stat lines (office only — skip on foundry).
+      const scorers = hasWc
+        ? await fetch('/api/topscorers', { cache: 'no-store' })
+            .then((r) => r.json()).then((s) => (s.ok ? s.scorers : [])).catch(() => [])
+        : [];
       const prevById = new Map(entries.map((e) => [e.fix.fixtureId, e]));
       entries = await Promise.all(fixtures.map((f) => buildEntry(f, scorers, prevById.get(f.fixtureId))));
       renderCurrent();
