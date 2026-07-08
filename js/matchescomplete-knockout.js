@@ -49,6 +49,10 @@
     // Server-resolved winner accounts for penalty shootouts → correct loser.
     const homeLoser = m.winner === 'away';
     const awayLoser = m.winner === 'home';
+    // Shootout score under the PEN tag (home–away, matching the columns) —
+    // a bare "PEN" between two 0s reads as missing information.
+    const pens = m.decidedBy === 'PEN' && m.penH != null && m.penA != null
+      ? `<div class="result-pens">${m.penH}–${m.penA}</div>` : '';
     const possH = Number.isFinite(m.possH) ? m.possH : 50;
     const possA = Number.isFinite(m.possA) ? m.possA : 50;
     return `
@@ -65,6 +69,7 @@
           <div class="result-centre">
             <div class="vert-seg"></div>
             <div class="result-ft">${resultTag(m)}</div>
+            ${pens}
             <div class="vert-seg"></div>
           </div>
           <div class="result-team away ${awayLoser ? 'loser' : ''}">

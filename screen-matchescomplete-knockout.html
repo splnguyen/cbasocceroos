@@ -57,6 +57,9 @@ html,body{
 .result-centre{width:200px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:24px;}
 .result-centre .vert-seg{width:16px;height:84px;background:var(--dark-grey);flex-shrink:0;}
 .result-ft{font-size:60px;font-weight:800;line-height:0.7;letter-spacing:3px;color:var(--white);}
+/* Shootout score under the PEN tag (pair layout); pulled into the 24px column
+   gap so the centre stack doesn't grow vs an FT/AET match. */
+.result-pens{font-size:30px;font-weight:800;line-height:1;letter-spacing:1.5px;color:var(--white);margin:-12px 0;font-variant-numeric:tabular-nums;}
 
 /* Possession bar — winner side white, loser side mid-grey (width = possession). */
 .poss-wrap{display:flex;flex-direction:column;gap:18px;width:100%;}
