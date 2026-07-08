@@ -67,6 +67,18 @@ GET /fixtures?league=1&season=2022&team=26&last=1
 
 This returns Argentina's last 2022 WC match — the **2022 Final vs France** (fixture `855750`). Gives a complete payload (events, stats, possession, lineups) for testing UI before tournament starts.
 
+## Head-to-head — ⚠️ record only covers api-football's history window
+
+`GET /fixtures/headtohead?h2h=A-B` returns every meeting **in api-football's
+database**, which for national teams only goes back to ~2008 — e.g. France vs
+Morocco returns just the 2022 WC semi, not their pre-2008 friendlies. Treat the
+aggregate (`/api/h2h`, built in `lib/h2h-service.js`) as "recent record", never
+label it "all-time". Shootout (PEN) fixtures are level on `goals.*`; the winner
+is in `score.penalty.*` — the service counts shootout wins as wins
+(`COUNT_SHOOTOUT_AS_WIN`), unlike FIFA's official records which count draws.
+Home/away flip per historical meeting, so the service re-maps every fixture's
+sides onto the queried team ids before aggregating.
+
 ## Coverage flags for WC 2026
 
 Confirmed via `GET /leagues?id=1&season=2026`:

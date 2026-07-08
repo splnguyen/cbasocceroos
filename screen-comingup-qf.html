@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=1080">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="typography.css">
+<link rel="stylesheet" href="fonts.css">
+<title>Match Coming Up (Quarter Finals)</title>
+<!--
+  "Match Coming Up" — Quarter Finals rotation (office).
+  Figma node 2268-6152 ("state-comingup-singlematch-qfsf"), all values ÷2:
+  60px screen padding, 79px section rhythm (gap-158), 64px yellow title,
+  white 48px round subhead between 16px bars, yellow LIVE IN countdown
+  (120px clock), two 367px avatars + VS, 16px middle bar (kept inside the
+  screen padding to match the header bars), then the bottom panel:
+  "PAST 5 MATCHES | HEAD TO HEAD" + three card-stat tiles (2271-6966).
+  The "WORLD CUP 2026" form rows beneath are prototyped (not in the Figma).
+
+  ROTATES through all four Quarter-finals (20s each) — see js/comingup-qf.js
+  for data provenance (curated last-5 tallies vs live form) and the foundry
+  variant screen-comingup-qf-foundry.html (Figma 2271-6838).
+  Data: js/comingup-qf.js → /api/upcoming-list, /api/h2h, /api/form,
+  /api/topscorers.
+-->
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{
+  width:1080px;height:1920px;overflow:hidden;
+  background:var(--off-black);
+  font-family:'CBABeaconSans',sans-serif;
+  color:var(--white);
+}
+.screen{
+  width:1080px;height:1920px;padding:60px;
+  display:flex;flex-direction:column;align-items:center;gap:79px;overflow:hidden;
+}
+/* ── Header (Figma: header-major + chip, then header-sub between bars) ── */
+.header-block{display:flex;flex-direction:column;gap:60px;flex-shrink:0;width:100%;}
+.top-row{display:flex;align-items:flex-start;justify-content:space-between;width:100%;}
+.page-title{font-size:64px;font-weight:800;line-height:68px;letter-spacing:3.2px;color:var(--brand-yellow);}
+.badge{
+  background:var(--black);color:var(--brand-yellow);
+  font-size:24px;font-weight:800;letter-spacing:1.2px;
+  padding:16px;border-radius:6px;white-space:nowrap;flex-shrink:0;
+}
+.header-sub{display:flex;flex-direction:column;gap:20px;width:100%;}
+.div-thick{width:100%;height:16px;background:var(--white);flex-shrink:0;}
+/* Round name in brand yellow (matches the foundry variant; requested). */
+.meta-row{font-size:48px;font-weight:800;letter-spacing:2.4px;color:var(--brand-yellow);}
+/* ── Live-in countdown (Figma gap-80 ÷2) ── */
+.cd-block{display:flex;flex-direction:column;gap:40px;align-items:center;flex-shrink:0;width:100%;}
+.cd-label{font-size:32px;font-weight:700;line-height:0.7;letter-spacing:3.2px;color:var(--brand-yellow);text-align:center;text-transform:uppercase;}
+.cd-clock{font-size:120px;font-weight:800;line-height:0.9;letter-spacing:6px;color:var(--brand-yellow);text-align:center;font-variant-numeric:tabular-nums;}
+.cd-kickoff{font-size:32px;font-weight:800;line-height:0.7;letter-spacing:3.2px;color:var(--brand-yellow);text-align:center;text-transform:uppercase;}
+/* ── Main match (Figma: 734px avatars ÷2, justify-between) ── */
+.match-block{display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0;width:100%;}
+.team-col{width:367px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:30px;}
+.team-flag{width:367px;height:367px;border-radius:50%;overflow:hidden;background:#444;flex-shrink:0;}
+.team-flag img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.team-name{font-size:48px;font-weight:800;line-height:0.7;letter-spacing:2.4px;color:var(--white);text-transform:uppercase;text-align:center;white-space:nowrap;}
+.vs-big{font-size:48px;font-weight:400;letter-spacing:5.28px;color:var(--white);text-transform:uppercase;flex-shrink:0;width:84.5px;text-align:center;align-self:center;}
+/* Middle divider — the Figma draws it full-bleed (1920 wide) but it renders
+   inside the 60px screen padding to MATCH the header dividers (requested). */
+.div-bleed{width:100%;height:16px;background:var(--white);flex-shrink:0;}
+/* ── Bottom panel (Figma 2268-6152 + 2271-6966 card-stat row) ──
+   "PAST 5 MATCHES | HEAD TO HEAD": three large stat cards — home wins /
+   draws / away wins over the CURATED true last-5 record (see
+   js/comingup-qf.js). Below them, the prototyped "WORLD CUP 2026" live form
+   rows (not in the Figma), pinned to the bottom padding line so top/bottom
+   screen padding stay even. All text line-height:1 (the 0.7 cap-trim clips
+   ellipsis'd cells). */
+.h2h-block{display:flex;flex-direction:column;width:100%;flex:1;min-height:0;}
+.h2h-title{font-size:32px;font-weight:800;line-height:1;letter-spacing:3.2px;color:var(--white);text-align:center;text-transform:uppercase;}
+.sec-label{
+  font-size:18px;font-weight:800;line-height:1;letter-spacing:1.8px;
+  color:var(--mid-grey);text-align:center;text-transform:uppercase;
+  /* fixed gap below the card-stat tiles (was margin-top:auto → ~114px
+     pinned-to-bottom; reduced ~30% on request) */
+  margin-top:80px;
+  margin-bottom:12px;
+}
+.sec-label.stale::after{content:' · STALE';color:var(--dark-grey);}
+/* card-stat tiles (Figma 2271-6970 ÷2: p-48→24, gap-42→21, label 48→24,
+   value 96→48, radius 20→10, row gap 28→14, title→cards gap 100→50) */
+.tally-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;flex-shrink:0;margin-top:50px;}
+.card-stat{
+  background:var(--charcoal);border-radius:10px;padding:24px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:21px;
+}
+.stat-label{font-size:24px;font-weight:800;line-height:1;letter-spacing:0.72px;color:var(--white);text-align:center;text-transform:uppercase;white-space:nowrap;}
+.stat-val{font-size:48px;font-weight:800;line-height:1;letter-spacing:2.4px;color:var(--white);text-align:center;font-variant-numeric:tabular-nums;}
+/* Per-team tournament row: name · form strip · right-aligned stat */
+.wc-rows{display:flex;flex-direction:column;gap:10px;flex-shrink:0;}
+.wc-row{
+  background:var(--charcoal);border-radius:10px;padding:10px 24px;
+  display:flex;align-items:center;gap:24px;
+}
+.wc-team{width:220px;flex-shrink:0;font-size:22px;font-weight:800;line-height:1;letter-spacing:0.44px;color:var(--white);text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.wc-strip{flex:1;display:flex;gap:8px;justify-content:center;}
+/* W/D/L boxes reuse the group-tile state ramp (tokens: qualified/contention/
+   eliminated) — the design system has no green, so W takes the established
+   white "winner" treatment instead of the brief's green tint. */
+.fbox{
+  width:32px;height:32px;border-radius:6px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:17px;font-weight:800;
+}
+.fbox.w{background:var(--tile-qualified);color:var(--charcoal);}
+.fbox.d{background:var(--tile-contention);color:var(--off-black);}
+.fbox.l{background:var(--off-black);color:var(--mid-grey);}
+.fbox.empty{background:var(--off-black);opacity:0.45;}
+.wc-stat{flex-shrink:0;min-width:220px;font-size:20px;font-weight:800;line-height:1;letter-spacing:0.6px;color:var(--brand-yellow);text-transform:uppercase;text-align:right;white-space:nowrap;}
+.wc-unavailable{font-size:20px;font-weight:800;line-height:1;letter-spacing:1px;color:var(--mid-grey);text-align:center;text-transform:uppercase;padding:24px 0;}
+</style>
+</head><body>
+<div class="screen">
+  <div class="header-block">
+    <div class="top-row">
+      <div class="page-title">Match<br>Coming Up</div>
+      <div class="badge" id="updatedBadge">Just updated</div>
+    </div>
+    <div class="header-sub">
+      <div class="div-thick"></div>
+      <div class="meta-row" id="subhead">Quarter Finals</div>
+      <div class="div-thick"></div>
+    </div>
+  </div>
+
+  <div class="cd-block">
+    <div class="cd-label">Live In</div>
+    <div class="cd-clock" id="cd-clock">–:–:–</div>
+    <div class="cd-kickoff" id="cd-kickoff">–</div>
+  </div>
+
+  <div class="match-block">
+    <div class="team-col">
+      <div class="team-flag"><img id="flag-home" alt=""></div>
+      <div class="team-name" id="name-home">–</div>
+    </div>
+    <div class="vs-big">VS</div>
+    <div class="team-col">
+      <div class="team-flag"><img id="flag-away" alt=""></div>
+      <div class="team-name" id="name-away">–</div>
+    </div>
+  </div>
+
+  <div class="div-bleed"></div>
+
+  <div class="h2h-block">
+    <div class="h2h-title" id="h2h-title">Past 5 Matches | Head to Head</div>
+    <div class="tally-row" id="tally-row"></div>
+    <div class="sec-label" id="wc-label">World Cup 2026</div>
+    <div class="wc-rows" id="wc-rows"></div>
+  </div>
+</div>
+<script src="js/flag-global.js"></script>
+<script src="js/comingup-qf.js" defer></script>
+</body></html>

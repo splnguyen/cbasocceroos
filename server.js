@@ -10,6 +10,7 @@ const { URL } = require('url');
 const { loadEnvFiles } = require('./lib/load-env');
 const { fetchMatch, fetchLive, fetchUpcoming, fetchUpcomingList, getApiFootballKey, getLastRateLimit } = require('./lib/match-service');
 const { fetchStandings } = require('./lib/standings-service');
+const { fetchH2H, fetchTeamForm } = require('./lib/h2h-service');
 const { fetchTopScorers } = require('./lib/topscorers-service');
 const { fetchTopKeepers } = require('./lib/topkeepers-service');
 
@@ -162,6 +163,46 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 500, { ok: false, error: err.message });
       }
       console.error('[api/topkeepers]', err);
+      return sendJson(res, 502, { ok: false, error: err.message });
+    }
+  }
+
+  if (req.url?.startsWith('/api/form')) {
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204);
+      return res.end();
+    }
+    if (req.method !== 'GET') {
+      return sendJson(res, 405, { error: 'Method not allowed' });
+    }
+    try {
+      const data = await fetchTeamForm(parseQuery(req.url));
+      return sendJson(res, 200, data);
+    } catch (err) {
+      if (err.code === 'MISSING_API_KEY') {
+        return sendJson(res, 500, { ok: false, error: err.message });
+      }
+      console.error('[api/form]', err);
+      return sendJson(res, 502, { ok: false, error: err.message });
+    }
+  }
+
+  if (req.url?.startsWith('/api/h2h')) {
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204);
+      return res.end();
+    }
+    if (req.method !== 'GET') {
+      return sendJson(res, 405, { error: 'Method not allowed' });
+    }
+    try {
+      const data = await fetchH2H(parseQuery(req.url));
+      return sendJson(res, 200, data);
+    } catch (err) {
+      if (err.code === 'MISSING_API_KEY') {
+        return sendJson(res, 500, { ok: false, error: err.message });
+      }
+      console.error('[api/h2h]', err);
       return sendJson(res, 502, { ok: false, error: err.message });
     }
   }
