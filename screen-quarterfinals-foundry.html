@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=1080">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="typography.css">
+<link rel="stylesheet" href="fonts.css">
+<title>Quarter Finals — Foundry</title>
+<!--
+  Foundry "Quarter Finals" bracket — office node 2233-6003.
+  Reuses js/quarterfinals.js UNCHANGED (same #grid / #updatedBadge ids and
+  .bracket/.col/.pair/.match/.h2h-* markup as screen-quarterfinals.html).
+  This file only supplies the foundry chrome + foundry-scaled bracket CSS:
+    - 160px top pad + 140px bottom pad, matching the Top Scorers foundry margins
+      so screens line up across the foundry carousel
+    - header compressed to a single 64px "Quarter Finals" title + ONE divider
+      (the office uses "State of Play" + a "Quarter Finals" meta between two bars)
+  Same bracket: LEFT = 4 QF matches in 2 pairs; RIGHT = the 2 Semi-finals each
+  pair feeds (blank circle + TBC until QF winners are known). NEW vs R16: every
+  match shows its AEST kick-off in a brand-yellow caption (Figma --yellow-bright
+  #ffd951 folds into --brand-yellow — this token sheet has no yellow-bright);
+  unposted fixtures show a muted "KICK-OFF TBC". Winner = white card / dark
+  name; loser = charcoal card + desaturated flag + grey name.
+-->
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{
+  width:1080px;height:1920px;overflow:hidden;
+  background:var(--off-black);
+  font-family:'CBABeaconSans',sans-serif;
+  color:var(--white);
+}
+/* Top padding 128px — the foundry-standard 160px (Top Scorers margin, Figma
+   pt-320 ÷2) reduced 20% so the bracket sits higher; 140px bottom kept. */
+.screen{width:1080px;height:1920px;padding:128px 60px 140px;display:flex;flex-direction:column;overflow:hidden;}
+
+/* ── Header (compressed vs office: single title + one divider) ─────────────── */
+.header-block{display:flex;flex-direction:column;gap:30px;flex-shrink:0;}
+.top-row{display:flex;align-items:flex-start;justify-content:space-between;}
+.page-title{font-size:64px;font-weight:800;line-height:68px;letter-spacing:3.2px;color:var(--brand-yellow);}
+.badge{
+  background:var(--black);color:var(--brand-yellow);
+  font-size:24px;font-weight:800;letter-spacing:1.2px;
+  padding:16px;border-radius:6px;white-space:nowrap;flex-shrink:0;
+}
+.div-thick{width:100%;height:16px;background:var(--white);flex-shrink:0;}
+
+/* ── Bracket (foundry-scaled — matches office screen-quarterfinals.html) ─────
+   LEFT column = all 4 Quarter-final matches in 2 pairs; RIGHT column = the 2
+   Semi-finals each pair feeds, centred against the pair. Every match carries
+   its AEST kick-off caption. */
+.bracket{
+  display:flex;gap:40px;align-items:center;
+  flex:1;min-height:0;margin-top:40px;
+}
+/* Fixed-height column blocks, vertically centred in the bracket area (Figma
+   h-1947 / h-1479 ÷2) — the cluster pulls to the middle rather than spreading
+   edge-to-edge like the R16 board. */
+.col{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:space-between;}
+.col-qf{height:974px;}
+.col-sf{height:740px;}
+.pair{display:flex;flex-direction:column;gap:20px;}
+.match{display:flex;flex-direction:column;gap:30px;}
+.ko-time{
+  font-size:24px;font-weight:800;letter-spacing:1.2px;line-height:0.7;
+  color:var(--brand-yellow);text-align:center;text-transform:uppercase;
+  white-space:nowrap;
+}
+.ko-time.tbc{color:var(--mid-grey);}
+.h2h-card{display:flex;align-items:center;gap:20px;}
+.h2h-tile{
+  flex:1;min-width:0;height:164px;
+  background:var(--charcoal);border-radius:10px;
+  padding:16px 15px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px;
+}
+.h2h-tile.winner{background:var(--white);}
+.h2h-flag{
+  width:70px;height:70px;border-radius:50%;overflow:hidden;
+  background:#444;flex-shrink:0;
+}
+.h2h-flag img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.h2h-name{
+  font-size:24px;font-weight:800;letter-spacing:0.48px;
+  color:var(--white);text-transform:uppercase;white-space:nowrap;
+  max-width:100%;
+}
+/* Long names (≥11 chars, e.g. SWITZERLAND) step down so they stay on one line. */
+.h2h-name.long{font-size:19px;letter-spacing:0.38px;}
+.h2h-tile.winner .h2h-name{color:var(--charcoal);}
+.h2h-tile.loser  .h2h-name{color:var(--mid-grey);}
+.h2h-tile.loser  .h2h-flag img{filter:grayscale(1) opacity(0.55);}
+.h2h-tile.tbc    .h2h-name{color:var(--mid-grey);}
+.h2h-vs{
+  font-size:24px;font-weight:800;letter-spacing:0.72px;
+  color:var(--white);text-transform:uppercase;
+  flex-shrink:0;width:33px;text-align:center;
+}
+</style>
+</head><body>
+<div class="screen">
+  <div class="header-block">
+    <div class="top-row">
+      <div class="page-title">Quarter<br>Finals</div>
+      <div class="badge" id="updatedBadge">Just updated</div>
+    </div>
+    <div class="div-thick"></div>
+  </div>
+
+  <div class="bracket" id="grid"></div>
+</div>
+<script src="js/flag-global.js"></script>
+<script src="js/quarterfinals.js" defer></script>
+</body></html>
