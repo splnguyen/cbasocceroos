@@ -229,6 +229,12 @@ html, body { height: 100%; overflow: hidden; background: #111; font-family: syst
         <div class="list-item-tag">G2/TK</div>
       </div>
 
+      <div class="list-item" data-view="foundry-all">
+        <div class="list-item-dot"></div>
+        <div class="list-item-label">All Foundry</div>
+        <div class="list-item-tag">1 + 2 + 3</div>
+      </div>
+
       <div class="list-section-label">Main Office</div>
 
       <div class="list-item" data-view="office-1">
@@ -282,12 +288,22 @@ const VIEWS = {
     { src: 'index.html?office=1&chrome=0', caption: 'Office 1', live: true, office: 1 },
     { src: 'index.html?office=2&chrome=0', caption: 'Office 2', live: true, office: 2 },
   ]},
+  // Foundry side-by-side, mirroring "Both Offices". Foundry pages have no
+  // st-* status fields — foundry:true reads the inner #screen-frame src
+  // instead, so the caption still shows which screen each display is on.
+  'foundry-all': { label: 'All Foundry Displays', frames: [
+    { src: 'foundry-1.html', caption: 'Foundry 1', foundry: true },
+    { src: 'foundry-2.html', caption: 'Foundry 2', foundry: true },
+    { src: 'foundry-3.html', caption: 'Foundry 3', foundry: true },
+  ]},
 };
 
-// Foundry items have no data-view — fall back to their data-src/label.
+// Single foundry items have no data-view — fall back to their data-src/label
+// (foundry:true so the playing-screen status shows there too).
 function resolveView(item) {
   if (item.dataset.view && VIEWS[item.dataset.view]) return VIEWS[item.dataset.view];
-  return { label: item.dataset.label, frames: [{ src: item.dataset.src, caption: item.dataset.label, live: false }] };
+  const src = item.dataset.src;
+  return { label: item.dataset.label, frames: [{ src, caption: item.dataset.label, live: false, foundry: src.startsWith('foundry-') }] };
 }
 
 const frameRow = document.getElementById('frame-row');
@@ -316,13 +332,13 @@ window.addEventListener('resize', layout);
 // ── Render the selected view ───────────────────────────────────────────────
 function renderView(view) {
   frameRow.innerHTML = view.frames.map((f, i) => `
-    <div class="frame-col" data-office="${f.office || ''}" data-live="${f.live ? 1 : 0}">
+    <div class="frame-col" data-office="${f.office || ''}" data-live="${f.live ? 1 : 0}" data-foundry="${f.foundry ? 1 : 0}">
       <div class="portrait-frame">
         <iframe data-idx="${i}" src="${f.src}" title="${f.caption}"></iframe>
         <div class="loading-overlay show"><div class="loading-dot"></div></div>
       </div>
       <div class="frame-caption">${f.caption}</div>
-      <div class="frame-status"><span class="st-dot"></span><span class="st-text">${f.live ? 'connecting…' : ''}</span></div>
+      <div class="frame-status"><span class="st-dot"></span><span class="st-text">${f.live || f.foundry ? 'connecting…' : ''}</span></div>
     </div>`).join('');
 
   frameRow.querySelectorAll('.frame-col').forEach(col => {
@@ -356,13 +372,39 @@ function setSidebarTag(office, text, isLive) {
   tag.classList.toggle('live', !!isLive);
 }
 
+// Foundry pages are plain iframe carousels — no st-* fields. Read the inner
+// #screen-frame's current src instead, so the status line still names the
+// screen each display is on ("Match Live" flips the dot to LIVE red).
+function readFoundryStatus(iframe) {
+  try {
+    const inner = iframe.contentDocument?.getElementById('screen-frame');
+    const src = inner?.getAttribute('src') || '';
+    if (!src || src === 'about:blank') return null;
+    const name = src.split('/').pop().split('?')[0]
+      .replace(/^screen-|-foundry|\.html$/g, '').replace(/-/g, ' ');
+    return { name, isLive: /matchlive/.test(src) };
+  } catch (e) {
+    return null; // cross-origin / not ready
+  }
+}
+
 function updateAllStatus() {
   frameRow.querySelectorAll('.frame-col').forEach(col => {
     const statusEl = col.querySelector('.frame-status');
-    if (col.dataset.live !== '1') { statusEl.style.display = 'none'; return; }
+    const isFoundry = col.dataset.foundry === '1';
+    if (col.dataset.live !== '1' && !isFoundry) { statusEl.style.display = 'none'; return; }
     statusEl.style.display = '';
     const textEl = statusEl.querySelector('.st-text');
     const office = col.dataset.office;
+
+    if (isFoundry) {
+      const f = readFoundryStatus(col.querySelector('iframe'));
+      statusEl.classList.remove('is-live', 'is-playing', 'is-paused');
+      if (!f) { textEl.textContent = 'connecting…'; return; }
+      statusEl.classList.add(f.isLive ? 'is-live' : 'is-playing');
+      textEl.innerHTML = `<span class="st-state">${f.isLive ? 'LIVE' : 'PLAYING'}</span> · <span class="st-screen">${f.name}</span>`;
+      return;
+    }
     const s = readOfficeStatus(col.querySelector('iframe'));
 
     statusEl.classList.remove('is-live', 'is-playing', 'is-paused');
