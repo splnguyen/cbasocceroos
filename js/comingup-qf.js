@@ -56,6 +56,47 @@
   let kickoffEpoch = null;
   const h2hValidated = new Set();  // one validation log per pairing per load
 
+  // ── Cache (instant paint on carousel revisits / page reloads) ────────────
+  const CACHE_KEY = 'cba:comingup-qf:v1';
+  function readCache() {
+    try {
+      const p = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+      return p && p.entries && p.ts ? p : null;
+    } catch (e) { return null; }
+  }
+  function writeCache(data) {
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify({ entries: data, ts: Date.now() })); }
+    catch (e) { /* best-effort */ }
+  }
+
+  // ── Flag preloading (warm browser memory cache so rotation is instant) ───
+  function preloadFlag(name) {
+    return new Promise((resolve) => {
+      const src = getFlagSVG(name);
+      if (!src) { resolve(); return; }
+      const img = new Image();
+      img.onload = resolve;
+      img.onerror = resolve;
+      img.src = src;
+    });
+  }
+  function preloadAllFlags() {
+    const promises = [];
+    for (const e of entries) {
+      if (e.fix.home?.name) promises.push(preloadFlag(e.fix.home.name));
+      if (e.fix.away?.name) promises.push(preloadFlag(e.fix.away.name));
+    }
+    return Promise.all(promises);
+  }
+  function imgReady(img) {
+    if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+    return new Promise((resolve) => {
+      const prev = img.onerror;
+      img.onload = resolve;
+      img.onerror = function () { if (prev) prev.call(this); resolve(); };
+    });
+  }
+
   const NAME_REMAP = { 'Cape Verde Islands': 'Cabo Verde' };
   const displayName = (name) => (NAME_REMAP[name] || name || '').toUpperCase();
   const ROUND_LABEL = { 'Quarter-finals': 'Quarter Finals', 'Semi-finals': 'Semi Finals' };
@@ -154,7 +195,18 @@
     wcLabel.classList.toggle('stale', Boolean(panel.stale));
   }
 
-  function renderFixture(fix, panel) {
+  // Elements that swap during rotation (hidden together, revealed together).
+  const swapEls = [
+    document.querySelector('.cd-block'),
+    document.querySelector('.match-block'),
+    document.querySelector('.h2h-block'),
+  ].filter(Boolean);
+
+  async function renderFixture(fix, panel, transition) {
+    if (transition) {
+      swapEls.forEach((el) => { el.style.opacity = '0'; });
+      await new Promise((r) => requestAnimationFrame(r));
+    }
     nameHome.textContent = displayName(fix.home.name);
     nameAway.textContent = displayName(fix.away.name);
     setFlag(flagHome, fix.home.name, fix.home.logo);
@@ -165,6 +217,10 @@
     tick();
     renderTally(fix, panel.tally);
     renderWc(fix, panel);
+    if (transition) {
+      await Promise.all([imgReady(flagHome), imgReady(flagAway)]);
+      swapEls.forEach((el) => { el.style.opacity = '1'; });
+    }
   }
 
   // ── Rotation state ───────────────────────────────────────────────────────
@@ -172,16 +228,16 @@
   let entries = [];
   let idx = 0;
 
-  function renderCurrent() {
+  function renderCurrent(transition) {
     if (!entries.length) return;
     idx %= entries.length;
     const e = entries[idx];
-    renderFixture(e.fix, e.panel);
+    renderFixture(e.fix, e.panel, transition);
   }
   function rotate() {
     if (entries.length < 2) return;
     idx = (idx + 1) % entries.length;
-    renderCurrent();
+    renderCurrent(true);
   }
 
   // ── Live data ────────────────────────────────────────────────────────────
@@ -279,6 +335,8 @@
         : [];
       const prevById = new Map(entries.map((e) => [e.fix.fixtureId, e]));
       entries = await Promise.all(fixtures.map((f) => buildEntry(f, scorers, prevById.get(f.fixtureId))));
+      writeCache(entries);
+      await preloadAllFlags();
       renderCurrent();
       updatedBadge.textContent = 'Just updated';
     } catch (err) {
@@ -346,9 +404,16 @@
   // ── Boot ─────────────────────────────────────────────────────────────────
   if (isDemo) {
     entries = demoEntries();
-    renderCurrent();
+    preloadAllFlags().then(() => renderCurrent());
     updatedBadge.textContent = 'Demo';
   } else {
+    const cached = readCache();
+    if (cached) {
+      entries = cached.entries;
+      preloadAllFlags().then(() => renderCurrent());
+      const mins = Math.floor((Date.now() - cached.ts) / 60000);
+      updatedBadge.textContent = mins <= 0 ? 'Just updated' : `Updated ${mins} min${mins > 1 ? 's' : ''} ago`;
+    }
     refresh();
     setInterval(refresh, POLL_MS);
   }
