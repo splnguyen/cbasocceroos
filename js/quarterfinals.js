@@ -33,7 +33,7 @@
 (function () {
   const POLL_MS = 5 * 60 * 1000;
   const isDemo = new URLSearchParams(location.search).get('demo') === '1';
-  const CACHE_KEY = 'cba:quarterfinals:v1';
+  const CACHE_KEY = 'cba:semifinals:v1';
 
   const grid = document.getElementById('grid');
   const badge = document.getElementById('updatedBadge');
@@ -68,16 +68,11 @@
   // posted QF fixtures — 97 FRA-MAR, 98 ESP-BEL, 99 NOR-ENG, 100 ARG-SUI).
   const QF_FEEDS = { 97: [89, 90], 98: [93, 94], 99: [91, 92], 100: [95, 96] };
   const SF_FEEDS = { 101: [97, 98], 102: [99, 100] };
-  // Confirmed SF kick-offs (AEST → UTC): SF1 15 Jul 5AM AEST, SF2 16 Jul 5AM AEST.
+  const FINAL_FEEDS = { 103: [101, 102] };
   const KNOWN_SF_KICKOFFS = {
     101: '2026-07-14T19:00:00+00:00',
     102: '2026-07-15T19:00:00+00:00',
   };
-  // Render rows: [QF pair] → the SF it feeds.
-  const ROWS = [
-    { pair: [97, 98], sf: 101 },
-    { pair: [99, 100], sf: 102 },
-  ];
 
   // ── Resolve the chain: standings → R32 → R16 (as js/roundof16.js) ──────────
   function groupsFromStandings(json) {
@@ -142,15 +137,13 @@
     return byNum;
   }
 
-  function buildRows(st, r32Fx, r16Fx, qfFx, sfFx) {
+  function buildData(st, r32Fx, r16Fx, qfFx, sfFx, finalFx) {
     const groups = groupsFromStandings(st);
     const r32 = buildR32ByNum(groups, r32Fx);
     const r16 = buildRound(R16_FEEDS, r32, r16Fx).byNum;
     const qf = buildRound(QF_FEEDS, r16, qfFx).byNum;
     const sfBuilt = buildRound(SF_FEEDS, qf, sfFx);
     const sf = sfBuilt.byNum;
-    // SF fixtures posted before any QF winner exists can't be claimed by team —
-    // assign leftovers to timeless SF slots chronologically (SF1 before SF2).
     const leftovers = sfBuilt.leftover
       .slice()
       .sort((a, b) => new Date(a.kickoffISO) - new Date(b.kickoffISO));
@@ -162,10 +155,11 @@
         sf[num].kickoffISO = KNOWN_SF_KICKOFFS[num];
       }
     }
-    return ROWS.map((r) => ({
-      qf: r.pair.map((n) => qf[n]),
-      sf: sf[r.sf],
-    }));
+    const fin = buildRound(FINAL_FEEDS, sf, finalFx).byNum;
+    return {
+      sfs: [sf[101], sf[102]],
+      final: fin[103],
+    };
   }
 
   // ── Render ──────────────────────────────────────────────────────────────────
@@ -213,18 +207,13 @@
         ${time ? `<div class="ko-time">${time}</div>` : `<div class="ko-time tbc">Kick-off TBC</div>`}
       </div>`;
   }
-  // Two explicit columns (Figma 2233-6003): the QF column is a fixed-height
-  // block of 2 pairs and the SF column a shorter block of 2 matches, BOTH
-  // vertically centred in the bracket area — the cluster pulls to the middle
-  // (Figma h-1947 / h-1479 inside a centred h-2321 row) rather than spreading
-  // edge-to-edge like the R16 board.
-  function render(rows, badgeText) {
+  function render(data, badgeText) {
     grid.innerHTML = `
-      <div class="col col-qf">
-        ${rows.map((r) => `<div class="pair">${r.qf.map(matchHtml).join('')}</div>`).join('')}
-      </div>
       <div class="col col-sf">
-        ${rows.map((r) => matchHtml(r.sf)).join('')}
+        ${data.sfs.map(matchHtml).join('')}
+      </div>
+      <div class="col col-final">
+        ${matchHtml(data.final)}
       </div>`;
     grid.querySelectorAll('.h2h-flag img').forEach((img) => setFlag(img, img.alt, null));
     badge.textContent = badgeText;
@@ -234,11 +223,11 @@
   function readCache() {
     try {
       const p = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
-      return p && p.rows && p.ts ? p : null;
+      return p && p.data && p.ts ? p : null;
     } catch (e) { return null; }
   }
-  function writeCache(rows) {
-    try { localStorage.setItem(CACHE_KEY, JSON.stringify({ rows, ts: Date.now() })); }
+  function writeCache(data) {
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() })); }
     catch (e) { /* best-effort */ }
   }
   function cacheBadge(ts) {
@@ -251,7 +240,7 @@
   async function refresh() {
     badge.textContent = 'Updating…';
     try {
-      const rounds = ['Round of 32', 'Round of 16', 'Quarter-finals', 'Semi-finals'];
+      const rounds = ['Round of 32', 'Round of 16', 'Quarter-finals', 'Semi-finals', 'Final'];
       const [stRes, ...roundRes] = await Promise.all([
         fetch('/api/standings', { cache: 'no-store' }),
         ...rounds.map((r) =>
@@ -259,46 +248,36 @@
       ]);
       const st = await stRes.json();
       if (!stRes.ok || !st.ok) throw new Error(st.error || `standings HTTP ${stRes.status}`);
-      const [r32, r16, qf, sf] = await Promise.all(roundRes.map(async (res) => {
+      const [r32, r16, qf, sf, fin] = await Promise.all(roundRes.map(async (res) => {
         const json = await res.json();
         return (res.ok && json.ok) ? (json.matches || []) : [];
       }));
-      const rows = buildRows(st, r32, r16, qf, sf);
-      writeCache(rows);
-      render(rows, 'Just updated');
+      const data = buildData(st, r32, r16, qf, sf, fin);
+      writeCache(data);
+      render(data, 'Just updated');
     } catch (err) {
-      console.error('[quarterfinals]', err);
+      console.error('[semifinals]', err);
       badge.textContent = 'Update failed';
     }
   }
 
-  // ── Demo: mirrors the REAL QF draw + kickoffs (api-football, 2026-07-08).
-  //    QF1 decided (illustrative) so winner/loser tiles + a populated SF slot
-  //    show offline; SF kickoffs stay TBC exactly like live pre-posting. ──────
-  const DEMO_ROWS = [
-    {
-      qf: [
-        { home: 'France', away: 'Morocco', winner: 'home', kickoffISO: '2026-07-09T20:00:00+00:00' },
-        { home: 'Spain', away: 'Belgium', winner: null, kickoffISO: '2026-07-10T19:00:00+00:00' },
-      ],
-      sf: { home: 'France', away: null, winner: null, kickoffISO: '2026-07-14T19:00:00+00:00' },
-    },
-    {
-      qf: [
-        { home: 'Norway', away: 'England', winner: null, kickoffISO: '2026-07-11T21:00:00+00:00' },
-        { home: 'Argentina', away: 'Switzerland', winner: null, kickoffISO: '2026-07-12T01:00:00+00:00' },
-      ],
-      sf: { home: null, away: null, winner: null, kickoffISO: '2026-07-15T19:00:00+00:00' },
-    },
-  ];
+  // ── Demo: plausible SF snapshot for offline testing. SF1 decided so
+  //    winner/loser tiles + a populated Final slot are visible. ──────────────
+  const DEMO_DATA = {
+    sfs: [
+      { home: 'France', away: 'Spain', winner: 'home', kickoffISO: '2026-07-14T19:00:00+00:00' },
+      { home: 'England', away: 'Argentina', winner: null, kickoffISO: '2026-07-15T19:00:00+00:00' },
+    ],
+    final: { home: 'France', away: null, winner: null, kickoffISO: null },
+  };
 
   // ── Boot ────────────────────────────────────────────────────────────────────
   if (isDemo) {
-    render(DEMO_ROWS, 'Demo');
+    render(DEMO_DATA, 'Demo');
     return;
   }
   const cached = readCache();
-  if (cached) render(cached.rows, cacheBadge(cached.ts));
+  if (cached) render(cached.data, cacheBadge(cached.ts));
   const isStale = !cached || (Date.now() - cached.ts) > POLL_MS;
   if (isStale) refresh();
   setInterval(refresh, POLL_MS);

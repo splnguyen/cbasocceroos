@@ -36,7 +36,7 @@
   const isDemo = params.get('demo') === '1';
   const POLL_MS = 5 * 60 * 1000;
   const ROTATE_MS = 10 * 1000;
-  const QF_ROUND = 'Quarter-finals';
+  const SF_ROUND = 'Semi-finals';
 
   const updatedBadge = document.getElementById('updatedBadge');
   const subhead    = document.getElementById('subhead');
@@ -57,7 +57,7 @@
   const h2hValidated = new Set();  // one validation log per pairing per load
 
   // ── Cache (instant paint on carousel revisits / page reloads) ────────────
-  const CACHE_KEY = 'cba:comingup-qf:v1';
+  const CACHE_KEY = 'cba:comingup-sf:v1';
   function readCache() {
     try {
       const p = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
@@ -317,13 +317,13 @@
   async function refresh() {
     updatedBadge.textContent = 'Updating…';
     try {
-      const res = await fetch(`/api/upcoming-list?count=8&round=${encodeURIComponent(QF_ROUND)}`, { cache: 'no-store' });
+      const res = await fetch(`/api/upcoming-list?count=8&round=${encodeURIComponent(SF_ROUND)}`, { cache: 'no-store' });
       const json = await res.json();
       if (!res.ok || !json.ok) throw new Error(json.error || `HTTP ${res.status}`);
       const fixtures = (json.matches || [])
         .filter((m) => !m.isFinished)
         .sort((a, b) => a.kickoffEpoch - b.kickoffEpoch)
-        .map((m) => ({ ...m, leagueRound: m.leagueRound || QF_ROUND }));
+        .map((m) => ({ ...m, leagueRound: m.leagueRound || SF_ROUND }));
       if (!fixtures.length) {
         updatedBadge.textContent = 'No upcoming matches';
         return;
@@ -345,52 +345,38 @@
     }
   }
 
-  // ── Demo: the REAL four-QF snapshot (fixtures + kickoffs from api-football,
-  //    curated tallies, forms baked from /api/form — all captured 2026-07-08).
-  //    Stat lines follow the live rules; only FRA has a known leaderboard
-  //    scorer (Mbappé 7). Form arrays are newest-first (Norway's L is their
-  //    final group game — knockout losers can't be here). ───────────────────
+  // ── Demo: plausible SF snapshot for offline testing. Live screens pull
+  //    the actual pairings from the API; this just needs to look right. ─────
   const DEMO = [
     {
-      home: { id: 2, name: 'France' }, away: { id: 31, name: 'Morocco' },
-      kickoffISO: '2026-07-09T20:00:00+00:00',
-      formH: ['W', 'W', 'W', 'W', 'W'], statH: '14 GF · MBAPPÉ 7',
-      formA: ['W', 'W', 'W', 'W', 'D'], statA: 'UNBEATEN IN 5',
+      home: { id: 2, name: 'France' }, away: { id: 9, name: 'Spain' },
+      kickoffISO: '2026-07-14T19:00:00+00:00',
+      tally: { curated: false, homeWins: 2, awayWins: 2, draws: 1 },
+      formH: ['W', 'W', 'W', 'W', 'W', 'W'], statH: '17 GF · MBAPPÉ 9',
+      formA: ['W', 'W', 'W', 'W', 'W', 'D'], statA: 'UNBEATEN IN 6',
     },
     {
-      home: { id: 9, name: 'Spain' }, away: { id: 1, name: 'Belgium' },
-      kickoffISO: '2026-07-10T19:00:00+00:00',
-      formH: ['W', 'W', 'W', 'W', 'D'], statH: 'UNBEATEN IN 5',
-      formA: ['W', 'W', 'W', 'D', 'D'], statA: 'UNBEATEN IN 5',
-    },
-    {
-      home: { id: 1090, name: 'Norway' }, away: { id: 10, name: 'England' },
-      kickoffISO: '2026-07-11T21:00:00+00:00',
-      formH: ['W', 'W', 'L', 'W', 'W'], statH: '12 GF',
-      formA: ['W', 'W', 'W', 'D', 'W'], statA: 'UNBEATEN IN 5',
-    },
-    {
-      home: { id: 26, name: 'Argentina' }, away: { id: 15, name: 'Switzerland' },
-      kickoffISO: '2026-07-12T01:00:00+00:00',
-      formH: ['W', 'W', 'W', 'W', 'W'], statH: '14 GF',
-      formA: ['W', 'W', 'W', 'W', 'D'], statA: 'UNBEATEN IN 5',
+      home: { id: 10, name: 'England' }, away: { id: 26, name: 'Argentina' },
+      kickoffISO: '2026-07-15T19:00:00+00:00',
+      tally: { curated: false, homeWins: 2, awayWins: 2, draws: 1 },
+      formH: ['W', 'W', 'W', 'W', 'D', 'W'], statH: 'UNBEATEN IN 6',
+      formA: ['W', 'W', 'W', 'W', 'W', 'W'], statA: '18 GF',
     },
   ];
 
   function demoEntries() {
     return DEMO.map((d) => {
       const curated = CURATED_H2H[pairKey(d.home.id, d.away.id)];
+      const tally = curated
+        ? { curated: true, homeWins: curated.wins[d.home.id], awayWins: curated.wins[d.away.id], draws: curated.draws }
+        : d.tally;
       return {
         fix: {
-          home: d.home, away: d.away, leagueRound: QF_ROUND,
+          home: d.home, away: d.away, leagueRound: SF_ROUND,
           kickoffEpoch: new Date(d.kickoffISO).getTime(),
         },
         panel: {
-          tally: {
-            curated: true,
-            homeWins: curated.wins[d.home.id], awayWins: curated.wins[d.away.id],
-            draws: curated.draws,
-          },
+          tally,
           formH: { form: d.formH.map((r) => ({ result: r })) },
           formA: { form: d.formA.map((r) => ({ result: r })) },
           statH: d.statH, statA: d.statA, stale: false,

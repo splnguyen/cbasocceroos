@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="typography.css">
 <link rel="stylesheet" href="fonts.css">
-<title>Quarter Finals — Foundry</title>
+<title>Semi Finals — Foundry</title>
 <!--
   Foundry "Quarter Finals" bracket — office node 2233-6003.
   Reuses js/quarterfinals.js UNCHANGED (same #grid / #updatedBadge ids and
@@ -53,14 +53,11 @@ html,body{
    stay centred against EACH OTHER but the cluster no longer floats. */
 .bracket{
   display:flex;gap:40px;align-items:center;
-  height:974px;flex-shrink:0;margin-top:110px;
+  height:740px;flex-shrink:0;margin-top:110px;
 }
-/* Fixed-height column blocks, vertically centred in the bracket area (Figma
-   h-1947 / h-1479 ÷2) — the cluster pulls to the middle rather than spreading
-   edge-to-edge like the R16 board. */
 .col{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:space-between;}
-.col-qf{height:974px;}
 .col-sf{height:740px;}
+.col-final{}
 .pair{display:flex;flex-direction:column;gap:20px;}
 .match{display:flex;flex-direction:column;gap:30px;}
 .ko-time{
@@ -103,7 +100,7 @@ html,body{
 <div class="screen">
   <div class="header-block">
     <div class="top-row">
-      <div class="page-title">Quarter<br>Finals</div>
+      <div class="page-title">Semi<br>Finals</div>
       <div class="badge" id="updatedBadge">Just updated</div>
     </div>
     <div class="div-thick"></div>
