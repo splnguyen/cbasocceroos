@@ -34,6 +34,7 @@
 (function () {
   const params = new URLSearchParams(location.search);
   const isDemo = params.get('demo') === '1';
+  const sfLock = params.get('sf');   // ?sf=1 or ?sf=2 → lock to that SF (no rotation)
   const POLL_MS = 5 * 60 * 1000;
   const ROTATE_MS = 10 * 1000;
   const SF_ROUND = 'Semi-finals';
@@ -228,6 +229,12 @@
   let entries = [];
   let idx = 0;
 
+  function applySfLock() {
+    if (!sfLock || !entries.length) return;
+    const lockIdx = parseInt(sfLock, 10) - 1;
+    if (lockIdx >= 0 && lockIdx < entries.length) entries = [entries[lockIdx]];
+  }
+
   function renderCurrent(transition) {
     if (!entries.length) return;
     idx %= entries.length;
@@ -335,6 +342,7 @@
         : [];
       const prevById = new Map(entries.map((e) => [e.fix.fixtureId, e]));
       entries = await Promise.all(fixtures.map((f) => buildEntry(f, scorers, prevById.get(f.fixtureId))));
+      applySfLock();
       writeCache(entries);
       await preloadAllFlags();
       renderCurrent();
@@ -390,12 +398,14 @@
   // ── Boot ─────────────────────────────────────────────────────────────────
   if (isDemo) {
     entries = demoEntries();
+    applySfLock();
     preloadAllFlags().then(() => renderCurrent());
     updatedBadge.textContent = 'Demo';
   } else {
     const cached = readCache();
     if (cached) {
       entries = cached.entries;
+      applySfLock();
       preloadAllFlags().then(() => renderCurrent());
       const mins = Math.floor((Date.now() - cached.ts) / 60000);
       updatedBadge.textContent = mins <= 0 ? 'Just updated' : `Updated ${mins} min${mins > 1 ? 's' : ''} ago`;

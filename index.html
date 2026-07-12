@@ -218,6 +218,8 @@ const SCREENS = [
   { id: 'comingup-sf',         label: 'Coming Up — Semi-final',    src: 'screen-comingup-knockout.html',  urlParam: 'sf_known' },
   { id: 'comingup-final',      label: 'Coming Up — Final',         src: 'screen-comingup-knockout.html',  urlParam: 'final_known' },
   { id: 'comingup-qf',         label: 'Coming Up — Semi Finals',src: 'screen-comingup-qf.html',        urlParam: null },
+  { id: 'comingup-sf1',        label: 'Coming Up — France v Spain',  src: 'screen-comingup-qf.html', urlParam: null, extraParams: { sf: '1' } },
+  { id: 'comingup-sf2',        label: 'Coming Up — England v Argentina', src: 'screen-comingup-qf.html', urlParam: null, extraParams: { sf: '2' } },
   // ── Results ───────────────────────────────────────────────────
   { id: 'match-complete',      label: 'Match Complete',            src: 'screen-matchcomplete.html',      urlParam: null },
   { id: 'matches-complete',    label: 'Latest Matches',            src: 'screen-matchescomplete.html',    urlParam: null },
@@ -250,7 +252,7 @@ const SIMULATE = CONFIG.get('simulate');
 const IDLE_POLL_MS = 5 * 60 * 1000; // no live match → poll every 5 min
 const LIVE_POLL_MS = 10 * 1000;     // match(es) live → poll every 10 s
 const LIVE_POLL_SEC = LIVE_POLL_MS / 1000; // passed to the live screens as ?poll=
-const SLIDE_MS     = 45 * 1000;     // hold 45 s per carousel screen
+const SLIDE_MS     = 30 * 1000;     // hold 30 s per carousel screen
 // ±12% jitter so office-1, office-2 and foundry-1 don't poll the API in lockstep
 // (spreads the load, avoids per-second bursts, improves the proxy cache hit rate).
 const jitter = (ms) => Math.round(ms * (0.88 + Math.random() * 0.24));
@@ -304,12 +306,12 @@ const GROUP_STAGE_PLAYLISTS = {
 
 // Office-specific knockout carousels (idle rotation when no match is live; both
 // offices flip to Match Live via the live state machine when a match is in-play).
-// SF stage: Coming Up rotates upcoming Semi-finals, bracket shows SF → Final.
-//   Office 1 → Coming Up (Semi Finals) → Semi Finals draw → Latest Matches (Knockout)
-//   Office 2 → Top Scorers → Top Keepers → Semi Finals draw
+// SF stage: each office shows a fixed lineup at 30s dwell.
+//   Office 1 → Coming Up France v Spain (30s) → Coming Up England v Argentina (30s)
+//   Office 2 → Upcoming Matches Pair (30s) → Top Scorers (30s) → Top Keepers (30s)
 const KNOCKOUT_PLAYLISTS = {
-  1: ['comingup-qf', 'quarter-finals', 'matches-complete-ko'],
-  2: ['top-scorers', 'top-keepers', 'quarter-finals'],
+  1: ['comingup-sf1', 'comingup-sf2'],
+  2: ['comingup-two', 'top-scorers', 'top-keepers'],
 };
 
 function getPhase() {
@@ -373,6 +375,7 @@ function buildSrc(screen, extra = {}) {
   if (!screen) return '';
   const qs = new URLSearchParams();
   if (screen.urlParam) qs.set('scenario', screen.urlParam);
+  if (screen.extraParams) for (const [k, v] of Object.entries(screen.extraParams)) qs.set(k, v);
   if (DEMO) qs.set('demo', '1');
   for (const [k, v] of Object.entries(extra)) {
     if (v != null && v !== '') qs.set(k, String(v));
