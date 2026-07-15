@@ -14,22 +14,15 @@ html,body{
   color:var(--white);
 }
 .screen{
-  width:1080px;height:1920px;padding:120px 60px 100px;
-  display:flex;flex-direction:column;align-items:center;
-  overflow:hidden;
+  width:1080px;height:1920px;padding:60px;
+  display:flex;flex-direction:column;align-items:center;gap:79px;overflow:hidden;
 }
 
-.header-block{width:100%;display:flex;flex-direction:column;gap:60px;flex-shrink:0;}
-.top-row{display:flex;align-items:flex-start;justify-content:space-between;}
-.page-title{
-  font-size:64px;font-weight:800;line-height:68px;letter-spacing:3.2px;
-  color:var(--brand-yellow);
-}
-.header-sub{display:flex;flex-direction:column;gap:20px;}
-.meta-row{
-  font-size:48px;font-weight:800;letter-spacing:2.4px;
-  color:var(--brand-yellow);
-}
+.header-block{display:flex;flex-direction:column;gap:60px;flex-shrink:0;width:100%;}
+.top-row{display:flex;align-items:flex-start;justify-content:space-between;width:100%;}
+.page-title{font-size:64px;font-weight:800;line-height:68px;letter-spacing:3.2px;color:var(--brand-yellow);}
+.header-sub{display:flex;flex-direction:column;gap:20px;width:100%;}
+.meta-row{font-size:48px;font-weight:800;letter-spacing:2.4px;color:var(--brand-yellow);}
 .badge{
   background:var(--black);color:var(--brand-yellow);
   font-size:24px;font-weight:800;letter-spacing:1.2px;
@@ -37,32 +30,19 @@ html,body{
 }
 .div-thick{width:100%;height:16px;background:var(--white);flex-shrink:0;}
 
-.cd-block{display:flex;flex-direction:column;gap:30px;align-items:center;flex-shrink:0;margin-top:80px;}
-.cd-label{font-size:32px;font-weight:700;letter-spacing:3.2px;color:var(--brand-yellow);text-transform:uppercase;}
-.cd-clock{
-  font-size:160px;font-weight:800;line-height:0.8;letter-spacing:8px;
-  color:var(--brand-yellow);font-variant-numeric:tabular-nums;
-  margin:40px 0;
-}
-.cd-kickoff{font-size:32px;font-weight:800;letter-spacing:3.2px;color:var(--brand-yellow);text-transform:uppercase;}
+.cd-block{display:flex;flex-direction:column;gap:40px;align-items:center;flex-shrink:0;width:100%;}
+.cd-label{font-size:32px;font-weight:700;line-height:0.7;letter-spacing:3.2px;color:var(--brand-yellow);text-align:center;text-transform:uppercase;}
+.cd-clock{font-size:120px;font-weight:800;line-height:0.9;letter-spacing:6px;color:var(--brand-yellow);text-align:center;font-variant-numeric:tabular-nums;}
+.cd-kickoff{font-size:32px;font-weight:800;line-height:0.7;letter-spacing:3.2px;color:var(--brand-yellow);text-align:center;text-transform:uppercase;}
 
-.match-block{
-  display:flex;align-items:center;justify-content:space-between;gap:20px;
-  width:100%;margin-top:80px;flex-shrink:0;
-}
-.team-col{display:flex;flex-direction:column;align-items:center;gap:30px;flex:1;min-width:0;}
+.match-block{display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0;width:100%;}
+.team-col{width:367px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:30px;}
 .flag-circle{width:367px;height:367px;border-radius:50%;overflow:hidden;background:#444;flex-shrink:0;}
 .flag-circle img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
 .flag-circle.tbc{display:flex;align-items:center;justify-content:center;}
-.team-name{
-  font-size:48px;font-weight:800;letter-spacing:2.4px;
-  color:var(--white);text-transform:uppercase;text-align:center;white-space:nowrap;
-}
+.team-name{font-size:48px;font-weight:800;line-height:0.7;letter-spacing:2.4px;color:var(--white);text-transform:uppercase;text-align:center;white-space:nowrap;}
 .team-name.tbc{color:var(--mid-grey);}
-.vs{
-  font-size:48px;font-weight:700;letter-spacing:5.28px;
-  color:var(--white);text-transform:uppercase;flex-shrink:0;width:84.5px;text-align:center;
-}
+.vs{font-size:48px;font-weight:400;letter-spacing:5.28px;color:var(--white);text-transform:uppercase;flex-shrink:0;width:84.5px;text-align:center;align-self:center;}
 </style>
 </head><body>
 <div class="screen">
