@@ -109,10 +109,7 @@ const GROUP_STAGE_PLAYLIST = [
   { src: 'screen-matchescomplete-foundry.html', label: 'Recently Completed (Pair)' },
   { src: 'screen-comingup-two-foundry.html',    label: 'Upcoming Matches (Pair)' },
 ];
-const KNOCKOUT_PLAYLIST_PRE = [
-  { src: 'screen-comingup-qf-foundry.html?sf=2', label: 'Coming Up — England v Argentina' },
-];
-const KNOCKOUT_PLAYLIST_POST = [
+const KNOCKOUT_PLAYLIST = [
   { src: 'screen-matchescomplete-foundry.html', label: 'Recently Completed (SFs)' },
 ];
 
@@ -136,20 +133,8 @@ let liveGracePolls = 0;
 // The tournament is "underway" once the first match has gone live, or the clock
 // has passed the opener (fallback if we never catch a live poll). Once all groups
 // finish (GROUP_STAGE_END) the knockout rotation takes over.
-let sf2Complete = false;
-async function checkSf2() {
-  try {
-    const qs = DEMO ? '&demo=1' : '';
-    const res = await fetch(`/api/upcoming-list?count=16&round=Semi-finals${qs}`, { cache: 'no-store' });
-    const json = await res.json();
-    if (!res.ok || !json.ok) return;
-    const matches = (json.matches || []).slice().sort((a, b) => new Date(a.kickoffISO) - new Date(b.kickoffISO));
-    if (matches.length >= 2 && matches[1].winner) sf2Complete = true;
-  } catch (e) { /* keep current state */ }
-}
-
 function activePlaylist() {
-  if (Date.now() > GROUP_STAGE_END) return sf2Complete ? KNOCKOUT_PLAYLIST_POST : KNOCKOUT_PLAYLIST_PRE;
+  if (Date.now() > GROUP_STAGE_END) return KNOCKOUT_PLAYLIST;
   const started = firstMatchHasStarted || Date.now() >= FIRST_MATCH_KICKOFF;
   return started ? GROUP_STAGE_PLAYLIST : PRE_TOURNAMENT_PLAYLIST;
 }
@@ -326,11 +311,6 @@ async function checkLive() {
   // holding for a kickoff or still inside the post-kickoff window.
   if (count === 0 && !inGrace && !awaitingKickoff && (nextKickoffEpoch == null || koWindowOver)) {
     await refreshNextKickoff();
-  }
-
-  // Check if SF2 has completed (switches carousel from Coming Up to Recently Completed)
-  if (count === 0 && !sf2Complete && Date.now() > GROUP_STAGE_END) {
-    await checkSf2();
   }
 
   // Poll fast: 10 s while live/grace, 5 s while holding for a kickoff to flip.

@@ -105,7 +105,20 @@
     return `${(p.weekday || '').toUpperCase()} ${p.day} ${(p.month || '').toUpperCase()} ${p.hour}:${p.minute}${(p.dayPeriod || '').toUpperCase().replace(/\./g, '')} AEST`;
   }
 
+  const ROUND_LABELS = {
+    'Semi-finals': 'Semi Finals',
+    'Quarter-finals': 'Quarter Finals',
+    'Round of 16': 'Round of 16',
+    'Final': 'Final',
+    '3rd Place': 'Third Place Play-Off',
+  };
+
   function renderResults(matches) {
+    const metaEl = $('meta-round');
+    if (metaEl && matches.length) {
+      const round = matches[0].leagueRound || matches[0].stage || '';
+      metaEl.textContent = ROUND_LABELS[round] || round || 'Group Stage';
+    }
     const root = $('results-stack');
     if (!matches.length) {
       root.innerHTML = '<div class="results-empty">No recent results yet.</div>';
