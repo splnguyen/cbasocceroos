@@ -11,6 +11,7 @@
   const POLL_MS = 5 * 60 * 1000;
   const isDemo = new URLSearchParams(location.search).get('demo') === '1';
   const CACHE_KEY = 'cba:third-place:v1';
+  const KNOWN_KICKOFF = '2026-07-18T21:00:00+00:00';
 
   const $ = (id) => document.getElementById(id);
 
@@ -109,7 +110,7 @@
           if (!m || !m.winner) return null;
           return m.winner === 'home' ? m.away.name : m.home.name;
         };
-        data = { home: loser(sorted[0]), away: loser(sorted[1]), kickoffISO: null, winner: null };
+        data = { home: loser(sorted[0]), away: loser(sorted[1]), kickoffISO: KNOWN_KICKOFF, winner: null };
       }
       writeCache(data);
       render(data, 'Just updated');
@@ -120,7 +121,7 @@
   }
 
   // ── Demo ─────────────────────────────────────────────────────────────────────
-  const DEMO = { home: 'France', away: null, kickoffISO: null, winner: null };
+  const DEMO = { home: 'France', away: null, kickoffISO: KNOWN_KICKOFF, winner: null };
 
   // ── Boot ─────────────────────────────────────────────────────────────────────
   if (isDemo) { render(DEMO, 'Demo'); return; }
