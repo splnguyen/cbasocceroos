@@ -7,12 +7,9 @@
 <title>Latest Matches — Foundry</title>
 <!--
   Foundry "Latest Matches / Recently Completed" — Figma node 2048-6826.
-  Reuses js/matchescomplete.js unchanged (same #results-stack / #standings-pair /
-  #updatedBadge ids and result-*/gcard markup as the office screen). This file
-  only supplies Foundry-scaled CSS + the foundry chrome (160px top pad, 64px
-  brand-yellow title, "Just updated" data-recency chip, shared fonts.css).
-  The GD column comes for free from matchescomplete.js's group cards — the Figma
-  mock predates it, but we include it so every group table matches.
+  Reuses js/matchescomplete.js (same #results-stack / #updatedBadge ids and
+  result-* markup as the office screen). Group standings cards omitted — this
+  screen only shows during knockout rounds where they're irrelevant.
 -->
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -60,32 +57,6 @@ html,body{
 .result-ft{font-size:60px;font-weight:800;letter-spacing:3px;color:var(--white);padding:16px 0;}
 .results-empty{color:var(--mid-grey);font-size:24px;text-align:center;padding:20px 0;}
 
-/* ── Group tables (one per displayed match: recent → left) ────────────────── */
-.standings-pair{display:flex;gap:20px;flex-shrink:0;margin-top:50px;}
-.gcard{flex:1;background:var(--charcoal);border-radius:10px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:15px;}
-.gtitle{font-size:24px;font-weight:800;letter-spacing:2.4px;color:var(--brand-yellow);text-transform:uppercase;text-align:center;}
-.gdivider{width:100%;height:7px;background:var(--mid-grey);}
-.gcols{display:flex;justify-content:flex-end;width:100%;padding:0 10px;}
-.gcols span{font-size:18px;font-weight:800;letter-spacing:0.9px;color:var(--white);text-transform:uppercase;width:37px;text-align:center;}
-.gcols span + span{margin-left:10px;}
-/* GD column right-aligned with a gap before PTS so +/−/0 line up cleanly. */
-.gcols .gs-gd,.grow-stats .gs-gd{text-align:right;margin-right:8px;}
-.grows{display:flex;flex-direction:column;gap:8px;width:100%;}
-.grow{height:50px;border-radius:10px;padding:0 10px;display:flex;align-items:center;justify-content:space-between;gap:30px;}
-.grow--qualified{background:var(--white);color:var(--off-black);}
-.grow--contention{background:var(--mid-grey);color:var(--off-black);}
-.grow--eliminated{background:var(--dark-grey);color:var(--white);}
-.grow-left{display:flex;align-items:center;gap:10px;flex-shrink:0;}
-.grow-flag{width:40px;height:40px;border-radius:50%;overflow:hidden;background:#444;flex-shrink:0;}
-.grow-flag img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
-.grow-code{font-size:24px;font-weight:800;letter-spacing:2.64px;text-transform:uppercase;}
-/* Single full-width card (both results in one group) → full country names. */
-.gcard--solo .grow-left{flex:1;min-width:0;}
-.gcard--solo .grow-code{min-width:0;letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.grow-stats{display:flex;justify-content:flex-end;}
-.grow-stats span{font-size:24px;font-weight:400;width:37px;text-align:center;letter-spacing:1.2px;}
-.grow-stats .gs-pts{font-weight:800;} /* PTS is the only bold stat */
-.grow-stats span + span{margin-left:10px;}
 </style>
 </head><body>
 <div class="screen">
@@ -102,8 +73,6 @@ html,body{
   </div>
 
   <div class="results-stack" id="results-stack"></div>
-
-  <div class="standings-pair" id="standings-pair"></div>
 </div>
 <script src="js/flag-global.js"></script>
 <script src="js/matchescomplete.js" defer></script>

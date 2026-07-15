@@ -209,6 +209,7 @@
 
   function renderStandings(groups, matches = []) {
     const root = $('standings-pair');
+    if (!root) return;
     const byLetter = new Map(groups.map((g) => [g.letter, g]));
     // Pick the groups of the displayed matches in order (recent → left). m.group
     // is "GROUP E"; dedupe so two matches in one group don't show it twice.
