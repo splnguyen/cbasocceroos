@@ -31,8 +31,9 @@ const GROUP_STAGE_PLAYLIST = [
   { src: 'screen-topkeepers-foundry.html',    label: 'Top Keepers' },
 ];
 const KNOCKOUT_PLAYLIST = [
-  { src: 'screen-topscorers-foundry.html',    label: 'Top Scorers' },
+  { src: 'screen-third-place.html',           label: '3rd Place Playoff' },
   { src: 'screen-topkeepers-foundry.html',    label: 'Top Keepers' },
+  { src: 'screen-topscorers-foundry.html',    label: 'Top Scorers' },
 ];
 function activePlaylist() {
   return Date.now() > GROUP_STAGE_END ? KNOCKOUT_PLAYLIST : GROUP_STAGE_PLAYLIST;
