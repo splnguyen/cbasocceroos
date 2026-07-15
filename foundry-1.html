@@ -149,10 +149,13 @@ function activePlaylist() {
 // `load`), so cached content is on-screen at reveal time.
 const transitionOverlay = document.getElementById('transition-overlay');
 let revealFallbackTimer = null;
+let lastReloadTime = Date.now();
+const STATIC_RELOAD_MS = 5 * 60 * 1000;
 const COVER_MS = 400; // must match #transition-overlay CSS transition duration
-function goTo(src) {
-  if (src === currentSrc) return;
+function goTo(src, forceReload) {
+  if (src === currentSrc && !forceReload) return;
   currentSrc = src;
+  lastReloadTime = Date.now();
   transitionOverlay.classList.remove('fade-out');
   transitionOverlay.classList.add('fade-in');
   clearTimeout(revealFallbackTimer);
@@ -198,7 +201,9 @@ function restartProgress() {
 function advance() {
   const pl = activePlaylist();
   carouselIndex = (carouselIndex + 1) % pl.length;
-  goTo(pl[carouselIndex].src);
+  const stale = pl.length === 1 && Date.now() - lastReloadTime > STATIC_RELOAD_MS;
+  goTo(pl[carouselIndex].src, stale);
+  if (stale) lastReloadTime = Date.now();
   restartProgress();
 }
 function startCarousel() {

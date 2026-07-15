@@ -42,16 +42,25 @@ const frame = document.getElementById('screen-frame');
 let index = 0;
 
 // Show playlist[i] for the current phase; dedup so a static screen never reloads.
+let lastReloadTime = Date.now();
+const STATIC_RELOAD_MS = 5 * 60 * 1000;
+
 function show(i) {
   const pl = activePlaylist();
   index = i % pl.length;
-  if (frame.src.indexOf(pl[index].src) === -1) frame.src = pl[index].src;
+  const target = pl[index].src;
+  const isSame = frame.src.indexOf(target) !== -1;
+  if (!isSame) {
+    frame.src = target;
+    lastReloadTime = Date.now();
+  } else if (pl.length === 1 && Date.now() - lastReloadTime > STATIC_RELOAD_MS) {
+    frame.src = target;
+    lastReloadTime = Date.now();
+  }
 }
 function advance() { show(index + 1); }
 
-show(0); // correct the hardcoded group-stage src immediately if already knockout
-// Re-evaluate every slide so the group-stage → knockout switch is picked up and a
-// multi-screen playlist rotates; a 1-screen playlist just re-checks the phase.
+show(0);
 setInterval(advance, SLIDE_DURATION_MS);
 
 // Reload at ~4am AEST daily so deployed changes apply without a manual refresh.
